@@ -14,11 +14,12 @@ export default auth((req) => {
     pathname.startsWith(route)
   );
 
-  // API and static assets
+  // API, static assets, and Server Actions
   if (
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
-    pathname.includes(".")
+    pathname.includes(".") ||
+    req.headers.has("next-action")
   ) {
     return NextResponse.next();
   }

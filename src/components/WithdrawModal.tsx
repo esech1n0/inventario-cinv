@@ -92,9 +92,15 @@ export function WithdrawModal({
       formData.append("eventName", eventName);
     }
 
-    const res = await createTransaction(formData);
-    if (!res.success) {
-      onErrorRevert(res.error || "Error al retirar stock");
+    try {
+      const res = await createTransaction(formData);
+      if (!res.success) {
+        onErrorRevert(res.error || "Error al retirar stock");
+      }
+    } catch (err: any) {
+      onErrorRevert(err?.message || "Error de comunicación al registrar la salida");
+    } finally {
+      setLoading(false);
     }
   }
 

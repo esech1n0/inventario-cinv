@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic, useTransition } from "react";
+import { useState, useOptimistic, useTransition, useEffect } from "react";
 import {
   Package,
   Search,
@@ -55,6 +55,11 @@ export function InventoryClient({
   userRole,
 }: InventoryClientProps) {
   const [items, setItems] = useState<Item[]>(initialItems);
+
+  useEffect(() => {
+    setItems(initialItems);
+  }, [initialItems]);
+
   const [selectedModuleId, setSelectedModuleId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
@@ -186,20 +191,27 @@ export function InventoryClient({
       return;
     }
 
+    const previousItems = items;
     startTransition(() => {
       setOptimisticItems({ type: "DELETE", itemId });
       setItems((prev) => prev.filter((i) => i.id !== itemId));
     });
 
-    const res = await deleteItem(itemId);
-    if (!res.success) {
-      handleErrorRevert(res.error || "No se pudo eliminar el artículo");
-    } else {
-      setBannerMessage({
-        type: "success",
-        text: `Artículo "${itemName}" eliminado.`,
-      });
-      setTimeout(() => setBannerMessage(null), 4000);
+    try {
+      const res = await deleteItem(itemId);
+      if (!res.success) {
+        setItems(previousItems);
+        handleErrorRevert(res.error || "No se pudo eliminar el artículo");
+      } else {
+        setBannerMessage({
+          type: "success",
+          text: `Artículo "${itemName}" eliminado.`,
+        });
+        setTimeout(() => setBannerMessage(null), 4000);
+      }
+    } catch (err: any) {
+      setItems(previousItems);
+      handleErrorRevert("Error de conexión al eliminar el artículo");
     }
   }
 
@@ -491,6 +503,17 @@ export function InventoryClient({
         selectedModuleId={
           selectedModuleId !== "ALL" ? selectedModuleId : undefined
         }
+        onSuccess={(newItem) => {
+          setItems((prev) => {
+            if (prev.some((i) => i.id === newItem.id)) return prev;
+            return [...prev, newItem];
+          });
+          setBannerMessage({
+            type: "success",
+            text: `Artículo "${newItem.name}" creado con éxito.`,
+          });
+          setTimeout(() => setBannerMessage(null), 4000);
+        }}
       />
     </div>
   );

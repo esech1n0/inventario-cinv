@@ -18,10 +18,10 @@ export const authConfig: NextAuthConfig = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        (session.user as { role: string }).role = token.role as string;
+        session.user.id = (token.id as string) || (token.sub as string);
+        (session.user as { role: string }).role = (token.role as string) || "USER";
         (session.user as { isApproved: boolean }).isApproved =
-          token.isApproved as boolean;
+          token.isApproved !== undefined ? (token.isApproved as boolean) : true;
       }
       return session;
     },

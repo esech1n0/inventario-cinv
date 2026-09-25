@@ -14,6 +14,7 @@ interface CreateItemModalProps {
   onClose: () => void;
   modules: Module[];
   selectedModuleId?: string;
+  onSuccess?: (newItem: any) => void;
 }
 
 export function CreateItemModal({
@@ -21,6 +22,7 @@ export function CreateItemModal({
   onClose,
   modules,
   selectedModuleId,
+  onSuccess,
 }: CreateItemModalProps) {
   const [moduleId, setModuleId] = useState(
     selectedModuleId || (modules[0]?.id ?? "")
@@ -69,18 +71,25 @@ export function CreateItemModal({
       formData.append("totalUnits", unitaryUnits.toString());
     }
 
-    const res = await createItem(formData);
-    setLoading(false);
-
-    if (!res.success) {
-      setError(res.error || "Error al crear el artículo");
-    } else {
-      onClose();
-      setName("");
-      setPackagingType("UNITARY");
-      setPacks(1);
-      setUnitsPerPack(10);
-      setUnitaryUnits(1);
+    try {
+      const res = await createItem(formData);
+      if (!res.success) {
+        setError(res.error || "Error al crear el artículo");
+      } else {
+        if (res.data && onSuccess) {
+          onSuccess(res.data);
+        }
+        onClose();
+        setName("");
+        setPackagingType("UNITARY");
+        setPacks(1);
+        setUnitsPerPack(10);
+        setUnitaryUnits(1);
+      }
+    } catch (err: any) {
+      setError(err?.message || "Error inesperado al conectar con el servidor");
+    } finally {
+      setLoading(false);
     }
   }
 

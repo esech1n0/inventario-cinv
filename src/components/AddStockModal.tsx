@@ -65,9 +65,15 @@ export function AddStockModal({
     formData.append("quantity", quantity.toString());
     formData.append("motive", motive);
 
-    const res = await createTransaction(formData);
-    if (!res.success) {
-      onErrorRevert(res.error || "Error al ingresar stock");
+    try {
+      const res = await createTransaction(formData);
+      if (!res.success) {
+        onErrorRevert(res.error || "Error al ingresar stock");
+      }
+    } catch (err: any) {
+      onErrorRevert(err?.message || "Error de comunicación al registrar la entrada");
+    } finally {
+      setLoading(false);
     }
   }
 

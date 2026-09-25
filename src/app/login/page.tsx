@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { loginUser } from "@/app/actions/auth";
-import { Package, Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -29,8 +30,15 @@ export default function LoginPage() {
       <div className="animate-fade-in w-full max-w-md">
         {/* Logo */}
         <div className="mb-8 flex flex-col items-center gap-3">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary shadow-lg shadow-primary/25">
-            <Package className="h-7 w-7 text-primary-foreground" />
+          <div className="flex items-center justify-center p-2">
+            <Image
+              src="/images/cinv.png"
+              alt="Logo CINV"
+              width={160}
+              height={66}
+              priority
+              className="h-14 w-auto object-contain drop-shadow-sm"
+            />
           </div>
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">Inventario CINV</h1>

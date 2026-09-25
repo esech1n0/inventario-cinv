@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   Package,
@@ -65,19 +66,21 @@ export function Navigation({ user }: NavigationProps) {
           <div className="flex items-center gap-6">
             <Link
               href="/dashboard"
-              className="flex items-center gap-2.5 transition-transform active:scale-95"
+              className="flex items-center gap-3 transition-transform active:scale-95"
             >
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
-                <Package className="h-5 w-5" />
+              <div className="flex h-9 items-center justify-center">
+                <Image
+                  src="/images/cinv.png"
+                  alt="Logo CINV"
+                  width={90}
+                  height={37}
+                  priority
+                  className="h-8 w-auto object-contain"
+                />
               </div>
-              <div>
-                <span className="text-base font-bold tracking-tight text-foreground">
-                  Inventario CINV
-                </span>
-                <span className="hidden sm:inline-block ml-2 rounded-md bg-secondary px-1.5 py-0.5 text-[10px] font-semibold tracking-wider text-secondary-foreground uppercase">
-                  PWA
-                </span>
-              </div>
+              <span className="text-base font-bold tracking-tight text-foreground">
+                Inventario CINV
+              </span>
             </Link>
 
             {/* Desktop Navigation Links */}

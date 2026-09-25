@@ -72,8 +72,8 @@ export function Navigation({ user }: NavigationProps) {
                 <Image
                   src="/images/cinv.png"
                   alt="Logo CINV"
-                  width={110}
-                  height={45}
+                  width={120}
+                  height={60}
                   priority
                   className="h-9 sm:h-10 w-auto object-contain"
                 />

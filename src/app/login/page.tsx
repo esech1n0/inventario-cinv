@@ -45,12 +45,12 @@ export default function LoginPage() {
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex items-center justify-center p-2">
             <Image
-              src="/images/cinv.png"
+              src="/images/logo-cinv.png"
               alt="Logo CINV"
-              width={160}
-              height={80}
+              width={100}
+              height={100}
               priority
-              className="h-16 w-auto object-contain drop-shadow-sm"
+              className="h-20 w-20 sm:h-24 sm:w-24 rounded-2xl object-contain shadow-md transition-transform hover:scale-105"
             />
           </div>
           <div className="text-center">

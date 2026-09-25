@@ -78,6 +78,49 @@ export async function deleteModule(moduleId: string): Promise<ActionResult> {
   }
 }
 
+export async function updateModule(
+  moduleId: string,
+  newName: string
+): Promise<ActionResult> {
+  try {
+    const session = await auth();
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return {
+        success: false,
+        error: "Solo los administradores pueden editar módulos",
+      };
+    }
+
+    const trimmed = newName.trim();
+    if (!trimmed) {
+      return { success: false, error: "El nombre del módulo no puede estar vacío" };
+    }
+
+    const existing = await prisma.module.findUnique({
+      where: { name: trimmed },
+    });
+
+    if (existing && existing.id !== moduleId) {
+      return { success: false, error: "Ya existe otro módulo con ese nombre" };
+    }
+
+    await prisma.module.update({
+      where: { id: moduleId },
+      data: { name: trimmed },
+    });
+
+    revalidatePath("/dashboard");
+    revalidatePath("/dashboard/modules");
+    return { success: true };
+  } catch (error: any) {
+    console.error("Error al actualizar módulo:", error);
+    return {
+      success: false,
+      error: error?.message || "Error al actualizar el módulo en la base de datos",
+    };
+  }
+}
+
 export async function getModules() {
   return prisma.module.findMany({
     include: {
@@ -86,3 +129,4 @@ export async function getModules() {
     orderBy: { createdAt: "asc" },
   });
 }
+

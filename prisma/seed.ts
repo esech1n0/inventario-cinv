@@ -42,7 +42,7 @@ async function main() {
 
   console.log("✅ Usuarios creados/actualizados:", admin.email, member.email);
 
-  // 2. Módulos base (según INSTRUCTIONS.md: Papelería, Electrónicos, Herramientas, Componentes, Insumos)
+  // 2. Módulos base (Papelería, Electrónicos, Herramientas, Componentes, Alimentos y Bebidas)
   const baseModules = [
     {
       name: "Papelería",
@@ -149,7 +149,7 @@ async function main() {
       ],
     },
     {
-      name: "Insumos",
+      name: "Alimentos y Bebidas",
       items: [
         {
           name: "Soldadura de Estaño 60/40",

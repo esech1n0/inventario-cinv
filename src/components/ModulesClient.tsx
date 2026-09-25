@@ -1,8 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import { Layers, Plus, Trash2, Box, Package, AlertCircle, CheckCircle, Loader2 } from "lucide-react";
-import { createModule, deleteModule } from "@/app/actions/modules";
+import {
+  Layers,
+  Plus,
+  Trash2,
+  Pencil,
+  Box,
+  Package,
+  AlertCircle,
+  CheckCircle,
+  Loader2,
+  X,
+} from "lucide-react";
+import { createModule, deleteModule, updateModule } from "@/app/actions/modules";
 
 interface ModuleWithCount {
   id: string;
@@ -25,6 +36,13 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [banner, setBanner] = useState<{ type: "success" | "error"; text: string } | null>(null);
+
+  // Edit module state
+  const [isEditOpen, setIsEditOpen] = useState(false);
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
+  const [editingModuleName, setEditingModuleName] = useState("");
+  const [editLoading, setEditLoading] = useState(false);
+  const [editError, setEditError] = useState("");
 
   const isAdmin = userRole === "ADMIN";
 
@@ -52,6 +70,41 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
       });
       setTimeout(() => setBanner(null), 4000);
       window.location.reload();
+    }
+  }
+
+  function handleOpenEdit(mod: ModuleWithCount) {
+    setEditingModuleId(mod.id);
+    setEditingModuleName(mod.name);
+    setEditError("");
+    setIsEditOpen(true);
+  }
+
+  async function handleUpdateModule(e: React.FormEvent) {
+    e.preventDefault();
+    if (!editingModuleId || !editingModuleName.trim()) return;
+
+    setEditLoading(true);
+    setEditError("");
+
+    const trimmed = editingModuleName.trim();
+    const res = await updateModule(editingModuleId, trimmed);
+    setEditLoading(false);
+
+    if (!res.success) {
+      setEditError(res.error || "Error al renombrar el módulo");
+    } else {
+      setModules((prev) =>
+        prev.map((m) => (m.id === editingModuleId ? { ...m, name: trimmed } : m))
+      );
+      setIsEditOpen(false);
+      setEditingModuleId(null);
+      setEditingModuleName("");
+      setBanner({
+        type: "success",
+        text: `Módulo actualizado a "${trimmed}".`,
+      });
+      setTimeout(() => setBanner(null), 4000);
     }
   }
 
@@ -139,15 +192,24 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   <Layers className="h-5 w-5" />
                 </div>
 
-                {/* Botón de eliminar: SOLO visible para ADMINISTRADORES */}
+                {/* Acciones de administración */}
                 {isAdmin ? (
-                  <button
-                    onClick={() => handleDeleteModule(mod.id, mod.name, mod._count.items)}
-                    title="Eliminar módulo (Solo Admin)"
-                    className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={() => handleOpenEdit(mod)}
+                      title="Editar nombre del módulo"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                    >
+                      <Pencil className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteModule(mod.id, mod.name, mod._count.items)}
+                      title="Eliminar módulo (Solo Admin)"
+                      className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                 ) : (
                   <span className="text-[11px] text-muted-foreground font-medium">
                     Módulo protegido
@@ -198,7 +260,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   required
                   value={newModuleName}
                   onChange={(e) => setNewModuleName(e.target.value)}
-                  placeholder="Ej. Audio y Video, Robótica, Material Médico..."
+                  placeholder="Ej. Alimentos y Bebidas, Robótica, Material Médico..."
                   className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -221,6 +283,70 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
                   Guardar Módulo
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal Editar Módulo */}
+      {isEditOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="animate-fade-in w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Pencil className="h-4 w-4 text-primary" />
+                <h2 className="text-lg font-bold text-foreground">Renombrar Módulo</h2>
+              </div>
+              <button
+                onClick={() => setIsEditOpen(false)}
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
+              Modifica el nombre del módulo. Todos los artículos y transacciones vinculadas mantendrán su relación.
+            </p>
+
+            <form onSubmit={handleUpdateModule} className="mt-4 space-y-4">
+              {editError && (
+                <div className="flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-xs text-destructive">
+                  <AlertCircle className="h-4 w-4 shrink-0" />
+                  <span>{editError}</span>
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <label className="text-xs font-semibold text-foreground">
+                  Nuevo nombre del módulo *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editingModuleName}
+                  onChange={(e) => setEditingModuleName(e.target.value)}
+                  placeholder="Ej. Alimentos y Bebidas"
+                  className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                />
+              </div>
+
+              <div className="flex gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditOpen(false)}
+                  className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={editLoading}
+                  className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
+                >
+                  {editLoading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  Actualizar Nombre
                 </button>
               </div>
             </form>

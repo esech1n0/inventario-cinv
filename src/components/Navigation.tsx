@@ -70,12 +70,12 @@ export function Navigation({ user }: NavigationProps) {
             >
               <div className="flex items-center justify-center">
                 <Image
-                  src="/images/logo-cinv.png"
+                  src="/images/cinv.png"
                   alt="Logo CINV"
-                  width={40}
-                  height={40}
+                  width={120}
+                  height={60}
                   priority
-                  className="h-9 w-9 sm:h-10 sm:w-10 rounded-lg object-contain drop-shadow-sm"
+                  className="h-9 sm:h-10 w-auto object-contain"
                 />
               </div>
               <span className="text-base font-bold tracking-tight text-foreground">

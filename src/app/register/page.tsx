@@ -32,12 +32,12 @@ export default function RegisterPage() {
         <div className="mb-8 flex flex-col items-center gap-3">
           <div className="flex items-center justify-center p-2">
             <Image
-              src="/images/logo-cinv.png"
+              src="/images/cinv.png"
               alt="Logo CINV"
-              width={90}
-              height={90}
+              width={160}
+              height={66}
               priority
-              className="h-16 w-16 sm:h-20 sm:w-20 rounded-2xl object-contain shadow-md transition-transform hover:scale-105"
+              className="h-14 w-auto object-contain drop-shadow-sm"
             />
           </div>
           <div className="text-center">

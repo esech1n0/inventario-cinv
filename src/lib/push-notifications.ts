@@ -1,12 +1,32 @@
 import webpush from "web-push";
 import { prisma } from "@/lib/prisma";
 
-const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
-const vapidSubject = process.env.VAPID_SUBJECT || "mailto:admin@cinv.org";
+let isVapidConfigured = false;
 
-if (vapidPublicKey && vapidPrivateKey) {
-  webpush.setVapidDetails(vapidSubject, vapidPublicKey, vapidPrivateKey);
+function ensureVapidConfigured(): boolean {
+  if (isVapidConfigured) return true;
+
+  const rawPub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+  const rawPriv = process.env.VAPID_PRIVATE_KEY;
+  const rawSub = process.env.VAPID_SUBJECT || "mailto:admin@cinv.org";
+
+  if (!rawPub || !rawPriv) {
+    return false;
+  }
+
+  // Clean keys: strip surrounding quotes, whitespace, and potential padding issues
+  const cleanPub = rawPub.replace(/["']/g, "").trim();
+  const cleanPriv = rawPriv.replace(/["']/g, "").trim();
+  const cleanSub = rawSub.replace(/["']/g, "").trim();
+
+  try {
+    webpush.setVapidDetails(cleanSub, cleanPub, cleanPriv);
+    isVapidConfigured = true;
+    return true;
+  } catch (error: any) {
+    console.error("Aviso: No se pudo inicializar VAPID para notificaciones push:", error?.message || error);
+    return false;
+  }
 }
 
 export type PushPayload = {
@@ -20,6 +40,8 @@ export async function sendPushNotificationToUser(
   payload: PushPayload
 ) {
   try {
+    if (!ensureVapidConfigured()) return;
+
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { pushSubscription: true },
@@ -36,6 +58,8 @@ export async function sendPushNotificationToUser(
 
 export async function broadcastPushNotification(payload: PushPayload) {
   try {
+    if (!ensureVapidConfigured()) return;
+
     const users = await prisma.user.findMany({
       where: {
         pushSubscription: { not: null },

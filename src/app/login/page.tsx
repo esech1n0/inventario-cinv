@@ -12,16 +12,29 @@ export default function LoginPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  async function handleSubmit(formData: FormData) {
-    setLoading(true);
-    setError("");
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (loading) return;
 
-    const result = await loginUser(formData);
-    if (!result.success) {
-      setError(result.error || "Error al iniciar sesión");
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    try {
+      const result = await loginUser(formData);
+      if (!result.success) {
+        setError(result.error || "Error al iniciar sesión");
+        setLoading(false);
+      } else {
+        router.push("/dashboard");
+        router.refresh();
+      }
+    } catch (err: any) {
+      if (err?.message?.includes("NEXT_REDIRECT")) {
+        return;
+      }
+      setError(err?.message || "Error al conectar con el servidor");
       setLoading(false);
-    } else {
-      router.push("/dashboard");
     }
   }
 
@@ -35,9 +48,9 @@ export default function LoginPage() {
               src="/images/cinv.png"
               alt="Logo CINV"
               width={160}
-              height={66}
+              height={80}
               priority
-              className="h-14 w-auto object-contain drop-shadow-sm"
+              className="h-16 w-auto object-contain drop-shadow-sm"
             />
           </div>
           <div className="text-center">
@@ -49,12 +62,34 @@ export default function LoginPage() {
         </div>
 
         {/* Card */}
-        <div className="rounded-2xl border border-border bg-card p-6 shadow-xl shadow-black/5 dark:shadow-black/20">
-          <form action={handleSubmit} className="space-y-4">
+        <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-xl shadow-black/5 dark:shadow-black/20">
+          {/* Animación de Carga Overlay */}
+          {loading && (
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/85 backdrop-blur-md transition-all animate-fade-in p-6 text-center">
+              <div className="relative flex items-center justify-center mb-4">
+                <div className="absolute h-16 w-16 rounded-full bg-primary/20 animate-ping" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
+                  <Loader2 className="h-7 w-7 animate-spin" />
+                </div>
+              </div>
+              <h3 className="text-base font-bold text-foreground">
+                Iniciando sesión...
+              </h3>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Verificando credenciales y preparando el inventario
+              </p>
+              <div className="mt-4 flex items-center gap-1.5 text-[11px] text-primary font-medium">
+                <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
+                <span>Por favor espera un momento</span>
+              </div>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
-              <div className="flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
+              <div className="animate-fade-in flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
                 <AlertCircle className="h-4 w-4 shrink-0" />
-                {error}
+                <span>{error}</span>
               </div>
             )}
 
@@ -69,7 +104,8 @@ export default function LoginPage() {
                   name="email"
                   type="email"
                   required
-                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  disabled={loading}
+                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                   placeholder="tu@correo.com"
                 />
               </div>
@@ -86,7 +122,8 @@ export default function LoginPage() {
                   name="password"
                   type="password"
                   required
-                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  disabled={loading}
+                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
                   placeholder="••••••••"
                 />
               </div>
@@ -95,16 +132,20 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50"
+              className="relative flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-75 disabled:pointer-events-none"
             >
               {loading ? (
-                <Loader2 className="h-4 w-4 animate-spin" />
-              ) : null}
-              {loading ? "Iniciando sesión..." : "Iniciar sesión"}
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Iniciando sesión...</span>
+                </>
+              ) : (
+                <span>Iniciar sesión</span>
+              )}
             </button>
           </form>
 
-          <div className="mt-4 text-center text-sm text-muted-foreground">
+          <div className="mt-5 text-center text-sm text-muted-foreground">
             ¿No tienes cuenta?{" "}
             <Link
               href="/register"

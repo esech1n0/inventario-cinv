@@ -66,16 +66,16 @@ export function Navigation({ user }: NavigationProps) {
           <div className="flex items-center gap-6">
             <Link
               href="/dashboard"
-              className="flex items-center gap-3 transition-transform active:scale-95"
+              className="flex items-center gap-2.5 transition-transform active:scale-95"
             >
-              <div className="flex h-9 items-center justify-center">
+              <div className="flex items-center justify-center">
                 <Image
                   src="/images/cinv.png"
                   alt="Logo CINV"
-                  width={90}
-                  height={37}
+                  width={110}
+                  height={45}
                   priority
-                  className="h-8 w-auto object-contain"
+                  className="h-9 sm:h-10 w-auto object-contain"
                 />
               </div>
               <span className="text-base font-bold tracking-tight text-foreground">

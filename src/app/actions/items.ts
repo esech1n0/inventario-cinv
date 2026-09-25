@@ -60,7 +60,14 @@ export async function createItem(formData: FormData): Promise<ActionResult> {
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/modules");
-    return { success: true, data: newItem };
+    return {
+      success: true,
+      data: {
+        ...newItem,
+        createdAt: newItem.createdAt.toISOString(),
+        updatedAt: newItem.updatedAt.toISOString(),
+      },
+    };
   } catch (error: any) {
     console.error("Error al crear artículo:", error);
     return {

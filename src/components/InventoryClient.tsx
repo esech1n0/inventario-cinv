@@ -26,7 +26,8 @@ interface Item {
   packs: number;
   unitsPerPack: number;
   totalUnits: number;
-  createdAt: Date;
+  createdAt: Date | string;
+  updatedAt?: Date | string;
   module: {
     id: string;
     name: string;

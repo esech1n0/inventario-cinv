@@ -104,29 +104,27 @@ export async function createTransaction(
       revalidatePath("/dashboard");
       revalidatePath("/dashboard/history");
 
-      // Notificaciones Push en background
-      (async () => {
-        try {
-          const typeLabel = transactionType === "OUT" ? "Retiro" : "Ingreso";
-          await sendPushNotificationToUser(session.user.id, {
-            title: `Movimiento: ${typeLabel} confirmado`,
-            body: `${typeLabel} de ${quantity} unidad(es) de ${result.itemName}. Motivo: ${motive}${
-              eventName ? ` (${eventName})` : ""
-            }`,
-            url: "/dashboard/history",
-          });
+      // Notificaciones Push con manejo seguro de errores
+      try {
+        const typeLabel = transactionType === "OUT" ? "Retiro" : "Ingreso";
+        await sendPushNotificationToUser(session.user.id, {
+          title: `Movimiento: ${typeLabel} confirmado`,
+          body: `${typeLabel} de ${quantity} unidad(es) de ${result.itemName}. Motivo: ${motive}${
+            eventName ? ` (${eventName})` : ""
+          }`,
+          url: "/dashboard/history",
+        });
 
-          if (transactionType === "OUT" && result.newStock !== undefined && result.newStock <= 5) {
-            await broadcastPushNotification({
-              title: `⚠️ Alerta: Stock Bajo`,
-              body: `El artículo "${result.itemName}" ahora tiene solo ${result.newStock} unidad(es) disponibles.`,
-              url: "/dashboard",
-            });
-          }
-        } catch (e) {
-          console.error("Error enviando push tras transacción:", e);
+        if (transactionType === "OUT" && result.newStock !== undefined && result.newStock <= 5) {
+          await broadcastPushNotification({
+            title: `⚠️ Alerta: Stock Bajo`,
+            body: `El artículo "${result.itemName}" ahora tiene solo ${result.newStock} unidad(es) disponibles.`,
+            url: "/dashboard",
+          });
         }
-      })();
+      } catch (e) {
+        console.error("Error enviando push tras transacción:", e);
+      }
 
       return { success: true, newStock: result.newStock };
     }

@@ -24,7 +24,8 @@ export default function LoginPage() {
   // Form states
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [otp, setOtp] = useState("");
+  const [otpDigits, setOtpDigits] = useState<string[]>(["", "", "", "", "", ""]);
+  const otp = otpDigits.join("");
 
   // UI status
   const [error, setError] = useState("");
@@ -34,9 +35,10 @@ export default function LoginPage() {
   const [cooldown, setCooldown] = useState(0);
   const [devCode, setDevCode] = useState<string | null>(null);
 
-  const otpInputRef = useRef<HTMLInputElement>(null);
+  // Referencias a los 6 casilleros de entrada PIN
+  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // Cooldown timer
+  // Contador de enfriamiento (cooldown)
   useEffect(() => {
     if (cooldown <= 0) return;
     const timer = setInterval(() => {
@@ -45,12 +47,79 @@ export default function LoginPage() {
     return () => clearInterval(timer);
   }, [cooldown]);
 
-  // Focus OTP input when switching to step 2
+  // Enfocar el primer casillero al pasar al paso 2 (OTP)
   useEffect(() => {
-    if (step === "otp" && otpInputRef.current) {
-      otpInputRef.current.focus();
+    if (step === "otp") {
+      setTimeout(() => {
+        inputRefs.current[0]?.focus();
+      }, 100);
     }
   }, [step]);
+
+  // Manejador para rellenar múltiples dígitos (pegar texto o autocompletar)
+  function handlePastedString(pasted: string) {
+    const clean = pasted.replace(/\D/g, "").slice(0, 6);
+    if (!clean) return;
+
+    const next = ["", "", "", "", "", ""];
+    for (let i = 0; i < clean.length; i++) {
+      next[i] = clean[i];
+    }
+    setOtpDigits(next);
+
+    const targetFocus = Math.min(5, clean.length < 6 ? clean.length : 5);
+    inputRefs.current[targetFocus]?.focus();
+  }
+
+  function handleDigitChange(index: number, val: string) {
+    const clean = val.replace(/\D/g, "");
+
+    // Si borró el valor
+    if (!clean) {
+      const next = [...otpDigits];
+      next[index] = "";
+      setOtpDigits(next);
+      return;
+    }
+
+    // Si pegó una cadena larga o autocompletado en este casillero
+    if (clean.length > 1) {
+      handlePastedString(clean);
+      return;
+    }
+
+    // Valor de 1 dígito
+    const next = [...otpDigits];
+    next[index] = clean[0];
+    setOtpDigits(next);
+
+    // Auto-avance al siguiente casillero si no es el último
+    if (index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  }
+
+  function handleKeyDown(index: number, e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Backspace") {
+      if (!otpDigits[index] && index > 0) {
+        // Casillero actual vacío: borrar el anterior y retroceder
+        const next = [...otpDigits];
+        next[index - 1] = "";
+        setOtpDigits(next);
+        inputRefs.current[index - 1]?.focus();
+      }
+    } else if (e.key === "ArrowLeft" && index > 0) {
+      inputRefs.current[index - 1]?.focus();
+    } else if (e.key === "ArrowRight" && index < 5) {
+      inputRefs.current[index + 1]?.focus();
+    }
+  }
+
+  function handlePaste(e: React.ClipboardEvent<HTMLInputElement>) {
+    e.preventDefault();
+    const pasted = e.clipboardData.getData("text");
+    handlePastedString(pasted);
+  }
 
   // Manejar paso 1: Solicitar código OTP
   async function handleCredentialsSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -77,7 +146,7 @@ export default function LoginPage() {
       } else {
         setStep("otp");
         setCooldown(60);
-        setOtp("");
+        setOtpDigits(["", "", "", "", "", ""]);
         if (result.devOtp) {
           setDevCode(result.devOtp);
         }
@@ -113,11 +182,13 @@ export default function LoginPage() {
         }
       } else {
         setCooldown(60);
+        setOtpDigits(["", "", "", "", "", ""]);
         if (result.devOtp) {
           setDevCode(result.devOtp);
         }
         setSuccessMsg("¡Se ha enviado un nuevo código a tu correo!");
         setTimeout(() => setSuccessMsg(""), 5000);
+        inputRefs.current[0]?.focus();
       }
     } catch (err: unknown) {
       setResending(false);
@@ -131,8 +202,8 @@ export default function LoginPage() {
     e.preventDefault();
     if (loading) return;
 
-    if (!otp.trim() || otp.trim().length < 6) {
-      setError("Ingresa el código de 6 dígitos completo");
+    if (otp.length < 6) {
+      setError("Ingresa los 6 dígitos del código de verificación");
       return;
     }
 
@@ -142,7 +213,7 @@ export default function LoginPage() {
     const formData = new FormData();
     formData.append("email", email);
     formData.append("password", password);
-    formData.append("otp", otp.trim());
+    formData.append("otp", otp);
 
     try {
       const result = await loginWithOTP(formData);
@@ -296,7 +367,7 @@ export default function LoginPage() {
             </form>
           )}
 
-          {/* PASO 2: Verificación OTP (2FA) */}
+          {/* PASO 2: Verificación OTP (2FA con 6 casillas PIN) */}
           {step === "otp" && (
             <div className="animate-fade-in space-y-5">
               <div className="flex items-center gap-3 rounded-2xl bg-primary/10 p-3.5 border border-primary/20">
@@ -321,10 +392,10 @@ export default function LoginPage() {
                     <span className="font-semibold">💡 Modo Desarrollo (Simulado):</span>
                     <button
                       type="button"
-                      onClick={() => setOtp(devCode)}
+                      onClick={() => handlePastedString(devCode)}
                       className="rounded bg-amber-500/20 px-2 py-0.5 font-bold hover:bg-amber-500/30 transition-colors"
                     >
-                      Copiar {devCode}
+                      Pegar {devCode}
                     </button>
                   </div>
                   <p className="mt-1 text-[11px] opacity-90">
@@ -334,28 +405,38 @@ export default function LoginPage() {
               )}
 
               <form onSubmit={handleOTPSubmit} className="space-y-4">
-                <div className="space-y-1.5">
-                  <label htmlFor="otp" className="text-sm font-semibold text-foreground">
-                    Código de verificación (6 dígitos)
+                <div className="space-y-2">
+                  <label className="block text-center text-xs font-semibold text-foreground uppercase tracking-wider">
+                    Ingresa el código de 6 dígitos
                   </label>
-                  <input
-                    ref={otpInputRef}
-                    id="otp"
-                    name="otp"
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    maxLength={6}
-                    required
-                    disabled={loading}
-                    value={otp}
-                    onChange={(e) => {
-                      const numericOnly = e.target.value.replace(/\D/g, "").slice(0, 6);
-                      setOtp(numericOnly);
-                    }}
-                    placeholder="000000"
-                    className="w-full rounded-2xl border border-input bg-background py-3.5 text-center font-mono text-2xl font-bold tracking-[0.5em] text-foreground outline-none transition-all placeholder:tracking-normal placeholder:font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
-                  />
+
+                  {/* 6 Casillas individuales con auto-avance y paste */}
+                  <div className="flex items-center justify-center gap-2 sm:gap-2.5 py-1">
+                    {otpDigits.map((digit, index) => (
+                      <input
+                        key={index}
+                        ref={(el) => {
+                          inputRefs.current[index] = el;
+                        }}
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={index === 0 ? 6 : 1}
+                        autoComplete={index === 0 ? "one-time-code" : "off"}
+                        value={digit}
+                        disabled={loading}
+                        onChange={(e) => handleDigitChange(index, e.target.value)}
+                        onKeyDown={(e) => handleKeyDown(index, e)}
+                        onPaste={handlePaste}
+                        className={`h-12 w-10 sm:h-14 sm:w-12 rounded-xl sm:rounded-2xl border-2 text-center font-mono text-xl sm:text-2xl font-extrabold outline-none transition-all ${
+                          digit
+                            ? "border-primary bg-primary/10 text-primary shadow-sm shadow-primary/10"
+                            : "border-input bg-background text-foreground hover:border-muted-foreground/40 focus:border-primary focus:ring-4 focus:ring-primary/20"
+                        }`}
+                      />
+                    ))}
+                  </div>
+
                   <p className="text-center text-[11px] text-muted-foreground">
                     El código expira en 10 minutos
                   </p>
@@ -391,7 +472,7 @@ export default function LoginPage() {
                     setStep("credentials");
                     setError("");
                     setSuccessMsg("");
-                    setOtp("");
+                    setOtpDigits(["", "", "", "", "", ""]);
                   }}
                   className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
                 >

@@ -122,13 +122,16 @@ export async function requestLoginOTP(formData: FormData): Promise<RequestOTPRes
     };
   }
 
-  const hasResend = !!process.env.RESEND_API_KEY;
+  const hasRealEmail = Boolean(
+    (process.env.SMTP_HOST && process.env.SMTP_USER && process.env.SMTP_PASS) ||
+    process.env.RESEND_API_KEY
+  );
 
   return {
     success: true,
     email: user.email,
     simulated: emailResult.simulated,
-    devOtp: !hasResend ? otpResult.otp : undefined,
+    devOtp: !hasRealEmail ? otpResult.otp : undefined,
   };
 }
 

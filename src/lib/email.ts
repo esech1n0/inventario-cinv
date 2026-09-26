@@ -1,7 +1,11 @@
+import nodemailer from "nodemailer";
+
 /**
  * Servicio de envío de correos electrónicos transaccionales para Inventario CINV.
- * Soporta Resend API directamente mediante HTTP (sin dependencias externas pesadas)
- * y modo simulado para desarrollo local si no se ha configurado RESEND_API_KEY.
+ * Soporta:
+ * 1. Servidor SMTP (Gmail, Outlook, correo institucional propio).
+ * 2. API de Resend (si está configurada la variable RESEND_API_KEY).
+ * 3. Modo simulación en consola de desarrollo si no hay credenciales configuradas en .env.
  */
 
 interface SendEmailParams {
@@ -24,61 +28,113 @@ export async function sendEmail({
   html,
   text,
 }: SendEmailParams): Promise<SendEmailResult> {
-  const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.EMAIL_FROM || "Inventario CINV <onboarding@resend.dev>";
+  const smtpHost = process.env.SMTP_HOST;
+  const smtpUser = process.env.SMTP_USER;
+  const smtpPass = process.env.SMTP_PASS;
+  const smtpPort = parseInt(process.env.SMTP_PORT || "465", 10);
+  const smtpSecure =
+    process.env.SMTP_SECURE !== undefined
+      ? process.env.SMTP_SECURE === "true"
+      : smtpPort === 465;
 
-  if (!apiKey) {
-    // Modo simulación en desarrollo
-    console.log("\n=======================================================");
-    console.log("📨 [SIMULADOR DE EMAIL - DESARROLLO]");
-    console.log(`Para: ${to}`);
-    console.log(`Asunto: ${subject}`);
-    console.log(`Contenido:\n${text}`);
-    console.log("=======================================================\n");
-    return {
-      success: true,
-      simulated: true,
-    };
-  }
+  const resendApiKey = process.env.RESEND_API_KEY;
 
-  try {
-    const response = await fetch("https://api.resend.com/emails", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        from,
-        to: [to],
+  // 1. Enviar vía SMTP (Gmail o institucional)
+  if (smtpHost && smtpUser && smtpPass) {
+    try {
+      const transporter = nodemailer.createTransport({
+        host: smtpHost,
+        port: smtpPort,
+        secure: smtpSecure,
+        auth: {
+          user: smtpUser,
+          pass: smtpPass,
+        },
+      });
+
+      const fromAddress =
+        process.env.EMAIL_FROM || `"Inventario CINV" <${smtpUser}>`;
+
+      const info = await transporter.sendMail({
+        from: fromAddress,
+        to,
         subject,
         html,
         text,
-      }),
-    });
+      });
 
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error("Error en API de Resend:", errorData);
+      console.log(`✅ [SMTP] Correo enviado a ${to} (ID: ${info.messageId})`);
+      return {
+        success: true,
+        messageId: info.messageId,
+      };
+    } catch (error: unknown) {
+      const errorMsg =
+        error instanceof Error ? error.message : "Error desconocido en transporte SMTP";
+      console.error("❌ [SMTP Error] No se pudo enviar el correo:", errorMsg);
       return {
         success: false,
-        error: errorData.message || `Error del servidor de correo (${response.status})`,
+        error: `Error de envío SMTP: ${errorMsg}`,
       };
     }
-
-    const data = await response.json();
-    return {
-      success: true,
-      messageId: data.id,
-    };
-  } catch (error: unknown) {
-    const errorMsg = error instanceof Error ? error.message : "Error desconocido de red";
-    console.error("Error al enviar email:", errorMsg);
-    return {
-      success: false,
-      error: errorMsg,
-    };
   }
+
+  // 2. Enviar vía Resend API (si está configurado)
+  if (resendApiKey) {
+    try {
+      const from = process.env.EMAIL_FROM || "Inventario CINV <onboarding@resend.dev>";
+      const response = await fetch("https://api.resend.com/emails", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${resendApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          from,
+          to: [to],
+          subject,
+          html,
+          text,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error("Error en API de Resend:", errorData);
+        return {
+          success: false,
+          error: errorData.message || `Error de Resend (${response.status})`,
+        };
+      }
+
+      const data = await response.json();
+      return {
+        success: true,
+        messageId: data.id,
+      };
+    } catch (error: unknown) {
+      const errorMsg = error instanceof Error ? error.message : "Error de red en Resend";
+      console.error("Error al enviar email por Resend:", errorMsg);
+      return {
+        success: false,
+        error: errorMsg,
+      };
+    }
+  }
+
+  // 3. Modo simulación en desarrollo (si no hay SMTP ni Resend configurados en .env)
+  console.log("\n=======================================================");
+  console.log("📨 [SIMULADOR DE EMAIL - DESARROLLO]");
+  console.log("⚠️ No se han configurado credenciales SMTP ni RESEND_API_KEY en .env.");
+  console.log(`Para: ${to}`);
+  console.log(`Asunto: ${subject}`);
+  console.log(`Contenido:\n${text}`);
+  console.log("=======================================================\n");
+
+  return {
+    success: true,
+    simulated: true,
+  };
 }
 
 /**

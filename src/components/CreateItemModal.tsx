@@ -31,16 +31,22 @@ export function CreateItemModal({
   const [packagingType, setPackagingType] = useState<"UNITARY" | "PACKAGED">(
     "UNITARY"
   );
-  const [packs, setPacks] = useState(1);
-  const [unitsPerPack, setUnitsPerPack] = useState(10);
-  const [unitaryUnits, setUnitaryUnits] = useState(1);
+  const [packs, setPacks] = useState<number | "">(1);
+  const [unitsPerPack, setUnitsPerPack] = useState<number | "">(10);
+  const [unitaryUnits, setUnitaryUnits] = useState<number | "">(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
   if (!isOpen) return null;
 
+  const numericPacks = typeof packs === "number" ? packs : 0;
+  const numericUnitsPerPack = typeof unitsPerPack === "number" ? unitsPerPack : 0;
+  const numericUnitary = typeof unitaryUnits === "number" ? unitaryUnits : 0;
+
   const totalCalculated =
-    packagingType === "PACKAGED" ? packs * unitsPerPack : unitaryUnits;
+    packagingType === "PACKAGED"
+      ? numericPacks * numericUnitsPerPack
+      : numericUnitary;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -53,6 +59,13 @@ export function CreateItemModal({
       return;
     }
 
+    if (packagingType === "PACKAGED") {
+      if (unitsPerPack === "" || unitsPerPack < 1) {
+        setError("Las unidades por paquete deben ser al menos 1");
+        return;
+      }
+    }
+
     setError("");
     setLoading(true);
 
@@ -62,13 +75,16 @@ export function CreateItemModal({
     formData.append("packagingType", packagingType);
 
     if (packagingType === "PACKAGED") {
-      formData.append("packs", packs.toString());
-      formData.append("unitsPerPack", unitsPerPack.toString());
-      formData.append("totalUnits", totalCalculated.toString());
+      const finalPacks = typeof packs === "number" ? packs : 0;
+      const finalUnitsPerPack = typeof unitsPerPack === "number" ? unitsPerPack : 1;
+      formData.append("packs", finalPacks.toString());
+      formData.append("unitsPerPack", finalUnitsPerPack.toString());
+      formData.append("totalUnits", (finalPacks * finalUnitsPerPack).toString());
     } else {
+      const finalUnitary = unitaryUnits === "" ? 0 : unitaryUnits;
       formData.append("packs", "0");
       formData.append("unitsPerPack", "1");
-      formData.append("totalUnits", unitaryUnits.toString());
+      formData.append("totalUnits", finalUnitary.toString());
     }
 
     try {
@@ -203,10 +219,17 @@ export function CreateItemModal({
                 <input
                   type="number"
                   min="0"
+                  placeholder="0"
                   value={packs}
-                  onChange={(e) =>
-                    setPacks(Math.max(0, parseInt(e.target.value, 10) || 0))
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setPacks("");
+                    } else {
+                      const parsed = parseInt(val, 10);
+                      if (!isNaN(parsed)) setPacks(Math.max(0, parsed));
+                    }
+                  }}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -218,10 +241,17 @@ export function CreateItemModal({
                 <input
                   type="number"
                   min="1"
+                  placeholder="1"
                   value={unitsPerPack}
-                  onChange={(e) =>
-                    setUnitsPerPack(Math.max(1, parseInt(e.target.value, 10) || 1))
-                  }
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    if (val === "") {
+                      setUnitsPerPack("");
+                    } else {
+                      const parsed = parseInt(val, 10);
+                      if (!isNaN(parsed)) setUnitsPerPack(Math.max(0, parsed));
+                    }
+                  }}
                   className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -241,10 +271,17 @@ export function CreateItemModal({
               <input
                 type="number"
                 min="0"
+                placeholder="0"
                 value={unitaryUnits}
-                onChange={(e) =>
-                  setUnitaryUnits(Math.max(0, parseInt(e.target.value, 10) || 0))
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setUnitaryUnits("");
+                  } else {
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) setUnitaryUnits(Math.max(0, parsed));
+                  }
+                }}
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
             </div>

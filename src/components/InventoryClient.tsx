@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useOptimistic, useTransition, useEffect } from "react";
+import { useState, useOptimistic, useTransition } from "react";
 import {
   Package,
   Search,
@@ -56,10 +56,11 @@ export function InventoryClient({
   userRole,
 }: InventoryClientProps) {
   const [items, setItems] = useState<Item[]>(initialItems);
-
-  useEffect(() => {
+  const [prevInitial, setPrevInitial] = useState(initialItems);
+  if (initialItems !== prevInitial) {
+    setPrevInitial(initialItems);
     setItems(initialItems);
-  }, [initialItems]);
+  }
 
   const [selectedModuleId, setSelectedModuleId] = useState<string>("ALL");
   const [searchQuery, setSearchQuery] = useState("");
@@ -188,6 +189,11 @@ export function InventoryClient({
   }
 
   async function handleDeleteItem(itemId: string, itemName: string) {
+    if (userRole !== "ADMIN") {
+      alert("Solo los administradores pueden eliminar artículos.");
+      return;
+    }
+
     if (!confirm(`¿Estás seguro de eliminar "${itemName}" del inventario?`)) {
       return;
     }
@@ -210,7 +216,7 @@ export function InventoryClient({
         });
         setTimeout(() => setBannerMessage(null), 4000);
       }
-    } catch (err: any) {
+    } catch {
       setItems(previousItems);
       handleErrorRevert("Error de conexión al eliminar el artículo");
     }
@@ -465,13 +471,15 @@ export function InventoryClient({
                     Ingresar
                   </button>
 
-                  <button
-                    onClick={() => handleDeleteItem(item.id, item.name)}
-                    title="Eliminar artículo"
-                    className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive active:scale-95 transition-all"
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </button>
+                  {userRole === "ADMIN" && (
+                    <button
+                      onClick={() => handleDeleteItem(item.id, item.name)}
+                      title="Eliminar artículo (Solo Admin)"
+                      className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive active:scale-95 transition-all"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
                 </div>
               </div>
             ))}

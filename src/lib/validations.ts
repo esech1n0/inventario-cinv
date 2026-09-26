@@ -34,13 +34,47 @@ export const createItemSchema = z.object({
 });
 
 // ─── Transaction Schemas ──────────────────────────────────────
-export const createTransactionSchema = z.object({
-  itemId: z.string().min(1, "El ID del artículo es requerido"),
-  transactionType: z.enum(["IN", "OUT"]),
-  quantity: z.number().int().min(1, "La cantidad debe ser al menos 1"),
-  motive: z.string().min(1, "El motivo es requerido"),
-  eventName: z.string().optional(),
-});
+export const WITHDRAW_MOTIVES = [
+  "Para mi",
+  "Para evento",
+  "Para la coordinación",
+] as const;
+
+export type WithdrawMotive = (typeof WITHDRAW_MOTIVES)[number];
+
+export const createTransactionSchema = z
+  .object({
+    itemId: z.string().min(1, "El ID del artículo es requerido"),
+    transactionType: z.enum(["IN", "OUT"]),
+    quantity: z.number().int().min(1, "La cantidad debe ser al menos 1"),
+    motive: z.string().min(1, "El motivo es requerido"),
+    eventName: z.string().optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.transactionType === "OUT") {
+        return (WITHDRAW_MOTIVES as readonly string[]).includes(data.motive);
+      }
+      return true;
+    },
+    {
+      message:
+        "El motivo de retiro debe ser: 'Para mi', 'Para evento' o 'Para la coordinación'",
+      path: ["motive"],
+    }
+  )
+  .refine(
+    (data) => {
+      if (data.transactionType === "OUT" && data.motive === "Para evento") {
+        return !!data.eventName && data.eventName.trim().length > 0;
+      }
+      return true;
+    },
+    {
+      message: "El nombre del evento es obligatorio cuando el motivo es 'Para evento'",
+      path: ["eventName"],
+    }
+  );
 
 // ─── Types ────────────────────────────────────────────────────
 export type LoginInput = z.infer<typeof loginSchema>;

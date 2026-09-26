@@ -1,40 +1,172 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { loginUser } from "@/app/actions/auth";
-import { Mail, Lock, Loader2, AlertCircle } from "lucide-react";
+import { requestLoginOTP, resendLoginOTP, loginWithOTP } from "@/app/actions/auth";
+import {
+  Mail,
+  Lock,
+  Loader2,
+  AlertCircle,
+  ShieldCheck,
+  ArrowLeft,
+  RotateCw,
+  KeyRound,
+  CheckCircle2,
+} from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState<"credentials" | "otp">("credentials");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  // Form states
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [otp, setOtp] = useState("");
+
+  // UI status
+  const [error, setError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const [devCode, setDevCode] = useState<string | null>(null);
+
+  const otpInputRef = useRef<HTMLInputElement>(null);
+
+  // Cooldown timer
+  useEffect(() => {
+    if (cooldown <= 0) return;
+    const timer = setInterval(() => {
+      setCooldown((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [cooldown]);
+
+  // Focus OTP input when switching to step 2
+  useEffect(() => {
+    if (step === "otp" && otpInputRef.current) {
+      otpInputRef.current.focus();
+    }
+  }, [step]);
+
+  // Manejar paso 1: Solicitar código OTP
+  async function handleCredentialsSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loading) return;
 
     setError("");
+    setSuccessMsg("");
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+
     try {
-      const result = await loginUser(formData);
+      const result = await requestLoginOTP(formData);
+      setLoading(false);
+
       if (!result.success) {
-        setError(result.error || "Error al iniciar sesión");
+        setError(result.error || "Error al verificar credenciales");
+        if (result.cooldownRemaining) {
+          setCooldown(result.cooldownRemaining);
+        }
+      } else {
+        setStep("otp");
+        setCooldown(60);
+        setOtp("");
+        if (result.devOtp) {
+          setDevCode(result.devOtp);
+        }
+        setSuccessMsg(`Código de verificación enviado a ${result.email || email}`);
+      }
+    } catch (err: unknown) {
+      setLoading(false);
+      const msg = err instanceof Error ? err.message : "Error al conectar con el servidor";
+      setError(msg);
+    }
+  }
+
+  // Manejar reenvío de OTP
+  async function handleResendOTP() {
+    if (cooldown > 0 || resending || loading) return;
+
+    setError("");
+    setSuccessMsg("");
+    setResending(true);
+
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+
+    try {
+      const result = await resendLoginOTP(formData);
+      setResending(false);
+
+      if (!result.success) {
+        setError(result.error || "No se pudo reenviar el código");
+        if (result.cooldownRemaining) {
+          setCooldown(result.cooldownRemaining);
+        }
+      } else {
+        setCooldown(60);
+        if (result.devOtp) {
+          setDevCode(result.devOtp);
+        }
+        setSuccessMsg("¡Se ha enviado un nuevo código a tu correo!");
+        setTimeout(() => setSuccessMsg(""), 5000);
+      }
+    } catch (err: unknown) {
+      setResending(false);
+      const msg = err instanceof Error ? err.message : "Error al reenviar código";
+      setError(msg);
+    }
+  }
+
+  // Manejar paso 2: Validar código OTP y acceder
+  async function handleOTPSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (loading) return;
+
+    if (!otp.trim() || otp.trim().length < 6) {
+      setError("Ingresa el código de 6 dígitos completo");
+      return;
+    }
+
+    setError("");
+    setLoading(true);
+
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+    formData.append("otp", otp.trim());
+
+    try {
+      const result = await loginWithOTP(formData);
+      if (!result.success) {
+        setError(result.error || "Error al verificar código");
         setLoading(false);
       } else {
         router.push("/dashboard");
         router.refresh();
       }
-    } catch (err: any) {
-      if (err?.message?.includes("NEXT_REDIRECT")) {
+    } catch (err: unknown) {
+      // Si Next.js lanzó una redirección interna, ignorarla
+      if (
+        err &&
+        typeof err === "object" &&
+        "message" in err &&
+        typeof (err as Record<string, unknown>).message === "string" &&
+        ((err as Record<string, unknown>).message as string).includes("NEXT_REDIRECT")
+      ) {
         return;
       }
-      setError(err?.message || "Error al conectar con el servidor");
       setLoading(false);
+      const msg = err instanceof Error ? err.message : "Error al conectar con el servidor";
+      setError(msg);
     }
   }
 
@@ -56,16 +188,18 @@ export default function LoginPage() {
           <div className="text-center">
             <h1 className="text-2xl font-bold text-foreground">Inventario CINV</h1>
             <p className="mt-1 text-sm text-muted-foreground">
-              Inicia sesión para acceder al sistema
+              {step === "credentials"
+                ? "Inicia sesión para acceder al sistema"
+                : "Verificación en dos pasos (2FA)"}
             </p>
           </div>
         </div>
 
         {/* Card */}
         <div className="relative overflow-hidden rounded-3xl border border-border bg-card p-6 sm:p-8 shadow-xl shadow-black/5 dark:shadow-black/20">
-          {/* Animación de Carga Overlay */}
+          {/* Overlay de Carga */}
           {loading && (
-            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/85 backdrop-blur-md transition-all animate-fade-in p-6 text-center">
+            <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-card/90 backdrop-blur-md transition-all animate-fade-in p-6 text-center">
               <div className="relative flex items-center justify-center mb-4">
                 <div className="absolute h-16 w-16 rounded-full bg-primary/20 animate-ping" />
                 <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg shadow-primary/30">
@@ -73,87 +207,200 @@ export default function LoginPage() {
                 </div>
               </div>
               <h3 className="text-base font-bold text-foreground">
-                Iniciando sesión...
+                {step === "credentials" ? "Verificando credenciales..." : "Validando código 2FA..."}
               </h3>
               <p className="mt-1 text-xs text-muted-foreground">
-                Verificando credenciales y preparando el inventario
+                {step === "credentials"
+                  ? "Generando código OTP seguro para tu cuenta"
+                  : "Accediendo de forma segura al inventario"}
               </p>
-              <div className="mt-4 flex items-center gap-1.5 text-[11px] text-primary font-medium">
-                <span className="inline-block h-2 w-2 rounded-full bg-primary animate-pulse" />
-                <span>Por favor espera un momento</span>
-              </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {error && (
-              <div className="animate-fade-in flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-sm text-destructive">
-                <AlertCircle className="h-4 w-4 shrink-0" />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <label htmlFor="email" className="text-sm font-medium text-foreground">
-                Correo electrónico
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                  placeholder="tu@correo.com"
-                />
-              </div>
+          {/* Mensajes de Alerta */}
+          {error && (
+            <div className="mb-4 animate-fade-in flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-xs sm:text-sm text-destructive">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{error}</span>
             </div>
+          )}
 
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="text-sm font-medium text-foreground">
-                Contraseña
-              </label>
-              <div className="relative">
-                <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  required
-                  disabled={loading}
-                  className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
-                  placeholder="••••••••"
-                />
-              </div>
+          {successMsg && !error && (
+            <div className="mb-4 animate-fade-in flex items-center gap-2 rounded-xl bg-success/10 p-3 text-xs sm:text-sm text-success">
+              <CheckCircle2 className="h-4 w-4 shrink-0" />
+              <span>{successMsg}</span>
             </div>
+          )}
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="relative flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-75 disabled:pointer-events-none"
-            >
-              {loading ? (
-                <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Iniciando sesión...</span>
-                </>
-              ) : (
-                <span>Iniciar sesión</span>
+          {/* PASO 1: Ingreso de correo y contraseña */}
+          {step === "credentials" && (
+            <form onSubmit={handleCredentialsSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label htmlFor="email" className="text-sm font-medium text-foreground">
+                  Correo electrónico
+                </label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    id="email"
+                    name="email"
+                    type="email"
+                    required
+                    disabled={loading}
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                    placeholder="tu@correo.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label htmlFor="password" className="text-sm font-medium text-foreground">
+                  Contraseña
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <input
+                    id="password"
+                    name="password"
+                    type="password"
+                    required
+                    disabled={loading}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-background py-2.5 pl-10 pr-4 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20 disabled:opacity-50"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                disabled={loading}
+                className="relative flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-75 disabled:pointer-events-none"
+              >
+                <span>Continuar a verificación 2FA</span>
+                <KeyRound className="h-4 w-4" />
+              </button>
+
+              <div className="mt-5 text-center text-sm text-muted-foreground">
+                ¿No tienes cuenta?{" "}
+                <Link
+                  href="/register"
+                  className="font-semibold text-primary hover:underline"
+                >
+                  Regístrate aquí
+                </Link>
+              </div>
+            </form>
+          )}
+
+          {/* PASO 2: Verificación OTP (2FA) */}
+          {step === "otp" && (
+            <div className="animate-fade-in space-y-5">
+              <div className="flex items-center gap-3 rounded-2xl bg-primary/10 p-3.5 border border-primary/20">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-sm">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-xs font-bold text-foreground">
+                    Código de un solo uso enviado
+                  </h3>
+                  <p className="text-[11px] text-muted-foreground">
+                    Revisa tu bandeja de entrada en{" "}
+                    <strong className="text-foreground">{email}</strong>
+                  </p>
+                </div>
+              </div>
+
+              {/* Modo Desarrollo / Simulación Local */}
+              {devCode && (
+                <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+                  <div className="flex items-center justify-between">
+                    <span className="font-semibold">💡 Modo Desarrollo (Simulado):</span>
+                    <button
+                      type="button"
+                      onClick={() => setOtp(devCode)}
+                      className="rounded bg-amber-500/20 px-2 py-0.5 font-bold hover:bg-amber-500/30 transition-colors"
+                    >
+                      Copiar {devCode}
+                    </button>
+                  </div>
+                  <p className="mt-1 text-[11px] opacity-90">
+                    Tu código OTP generado es: <strong className="font-mono text-sm tracking-wider">{devCode}</strong>
+                  </p>
+                </div>
               )}
-            </button>
-          </form>
 
-          <div className="mt-5 text-center text-sm text-muted-foreground">
-            ¿No tienes cuenta?{" "}
-            <Link
-              href="/register"
-              className="font-semibold text-primary hover:underline"
-            >
-              Regístrate aquí
-            </Link>
-          </div>
+              <form onSubmit={handleOTPSubmit} className="space-y-4">
+                <div className="space-y-1.5">
+                  <label htmlFor="otp" className="text-sm font-semibold text-foreground">
+                    Código de verificación (6 dígitos)
+                  </label>
+                  <input
+                    ref={otpInputRef}
+                    id="otp"
+                    name="otp"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
+                    maxLength={6}
+                    required
+                    disabled={loading}
+                    value={otp}
+                    onChange={(e) => {
+                      const numericOnly = e.target.value.replace(/\D/g, "").slice(0, 6);
+                      setOtp(numericOnly);
+                    }}
+                    placeholder="000000"
+                    className="w-full rounded-2xl border border-input bg-background py-3.5 text-center font-mono text-2xl font-bold tracking-[0.5em] text-foreground outline-none transition-all placeholder:tracking-normal placeholder:font-sans placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
+                  />
+                  <p className="text-center text-[11px] text-muted-foreground">
+                    El código expira en 10 minutos
+                  </p>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || otp.length < 6}
+                  className="relative flex w-full items-center justify-center gap-2 rounded-xl bg-primary py-3 text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 transition-all hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50 disabled:pointer-events-none"
+                >
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>Validar Código y Entrar</span>
+                </button>
+              </form>
+
+              {/* Botón de reenvío con cooldown y botón volver */}
+              <div className="flex flex-col gap-2 pt-2 border-t border-border">
+                <button
+                  type="button"
+                  onClick={handleResendOTP}
+                  disabled={cooldown > 0 || resending || loading}
+                  className="flex items-center justify-center gap-1.5 text-xs font-semibold text-primary hover:underline disabled:text-muted-foreground disabled:no-underline"
+                >
+                  <RotateCw className={`h-3.5 w-3.5 ${resending ? "animate-spin" : ""}`} />
+                  {cooldown > 0
+                    ? `Reenviar nuevo código en ${cooldown}s`
+                    : "Reenviar código de verificación"}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("credentials");
+                    setError("");
+                    setSuccessMsg("");
+                    setOtp("");
+                  }}
+                  className="flex items-center justify-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <ArrowLeft className="h-3 w-3" />
+                  <span>Cambiar correo o contraseña</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

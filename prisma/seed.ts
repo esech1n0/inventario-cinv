@@ -4,7 +4,7 @@ import bcryptjs from "bcryptjs";
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log("🌱 Iniciando seed de base de datos...");
+  console.log("🌱 Iniciando seed de base de datos para ambiente de oficina...");
 
   // 1. Usuarios base
   const adminPassword = await bcryptjs.hash("Admin123!", 12);
@@ -42,135 +42,158 @@ async function main() {
 
   console.log("✅ Usuarios creados/actualizados:", admin.email, member.email);
 
-  // 2. Módulos base (Papelería, Electrónicos, Herramientas, Componentes, Alimentos y Bebidas)
+  // 2. Módulos base de oficina (Papelería, Consumibles de Impresión, Equipo y Cómputo, Accesorios de Oficina)
   const baseModules = [
     {
       name: "Papelería",
       items: [
         {
-          name: "Hojas Blancas Carta",
-          packagingType: "PACKAGED" as const,
-          packs: 5,
-          unitsPerPack: 500,
-          totalUnits: 2500,
-        },
-        {
-          name: "Bolígrafos Azules",
+          name: "Hojas Blancas Carta (Resmas)",
           packagingType: "PACKAGED" as const,
           packs: 10,
+          unitsPerPack: 500,
+          totalUnits: 5000,
+        },
+        {
+          name: "Bolígrafos Azules (Caja)",
+          packagingType: "PACKAGED" as const,
+          packs: 8,
           unitsPerPack: 12,
-          totalUnits: 120,
+          totalUnits: 96,
         },
         {
-          name: "Marcadores para Pizarrón",
-          packagingType: "UNITARY" as const,
-          packs: 0,
-          unitsPerPack: 1,
-          totalUnits: 25,
-        },
-      ],
-    },
-    {
-      name: "Electrónicos",
-      items: [
-        {
-          name: "Cables USB-C a USB-A",
-          packagingType: "UNITARY" as const,
-          packs: 0,
-          unitsPerPack: 1,
-          totalUnits: 15,
+          name: "Bolígrafos Negros (Caja)",
+          packagingType: "PACKAGED" as const,
+          packs: 6,
+          unitsPerPack: 12,
+          totalUnits: 72,
         },
         {
-          name: "Cargadores 20W",
-          packagingType: "UNITARY" as const,
-          packs: 0,
-          unitsPerPack: 1,
-          totalUnits: 8,
+          name: "Notas Adhesivas (Post-its)",
+          packagingType: "PACKAGED" as const,
+          packs: 20,
+          unitsPerPack: 100,
+          totalUnits: 2000,
         },
         {
-          name: "Adaptadores HDMI a VGA",
-          packagingType: "UNITARY" as const,
-          packs: 0,
-          unitsPerPack: 1,
-          totalUnits: 6,
-        },
-      ],
-    },
-    {
-      name: "Herramientas",
-      items: [
-        {
-          name: "Kit de Destornilladores de Precisión",
+          name: "Sellos de Coordinación",
           packagingType: "UNITARY" as const,
           packs: 0,
           unitsPerPack: 1,
           totalUnits: 4,
         },
         {
-          name: "Pinzas de Corte",
+          name: "Pegamento en Barra",
           packagingType: "UNITARY" as const,
           packs: 0,
           unitsPerPack: 1,
-          totalUnits: 5,
-        },
-        {
-          name: "Multímetro Digital",
-          packagingType: "UNITARY" as const,
-          packs: 0,
-          unitsPerPack: 1,
-          totalUnits: 3,
+          totalUnits: 15,
         },
       ],
     },
     {
-      name: "Componentes",
+      name: "Consumibles de Impresión",
       items: [
         {
-          name: "Arduino Uno R3",
+          name: "Tóner HP LaserJet Negro",
+          packagingType: "UNITARY" as const,
+          packs: 0,
+          unitsPerPack: 1,
+          totalUnits: 6,
+        },
+        {
+          name: "Cartucho de Tinta Negra Epson",
+          packagingType: "UNITARY" as const,
+          packs: 0,
+          unitsPerPack: 1,
+          totalUnits: 8,
+        },
+        {
+          name: "Cartucho de Tinta Color Epson",
+          packagingType: "UNITARY" as const,
+          packs: 0,
+          unitsPerPack: 1,
+          totalUnits: 8,
+        },
+        {
+          name: "Tóner Brother TN-660",
+          packagingType: "UNITARY" as const,
+          packs: 0,
+          unitsPerPack: 1,
+          totalUnits: 4,
+        },
+      ],
+    },
+    {
+      name: "Equipo y Cómputo",
+      items: [
+        {
+          name: "Laptops Dell Latitude",
+          packagingType: "UNITARY" as const,
+          packs: 0,
+          unitsPerPack: 1,
+          totalUnits: 6,
+        },
+        {
+          name: "Extensiones de Corriente (10m)",
+          packagingType: "UNITARY" as const,
+          packs: 0,
+          unitsPerPack: 1,
+          totalUnits: 8,
+        },
+        {
+          name: "Extensiones de Corriente (5m)",
           packagingType: "UNITARY" as const,
           packs: 0,
           unitsPerPack: 1,
           totalUnits: 12,
         },
         {
-          name: "Resistencias 220 Ohm",
-          packagingType: "PACKAGED" as const,
-          packs: 20,
-          unitsPerPack: 50,
-          totalUnits: 1000,
-        },
-        {
-          name: "Sensores Ultrasónicos HC-SR04",
-          packagingType: "UNITARY" as const,
-          packs: 0,
-          unitsPerPack: 1,
-          totalUnits: 18,
-        },
-      ],
-    },
-    {
-      name: "Alimentos y Bebidas",
-      items: [
-        {
-          name: "Soldadura de Estaño 60/40",
+          name: "Regletas Multicontacto con Supresor",
           packagingType: "UNITARY" as const,
           packs: 0,
           unitsPerPack: 1,
           totalUnits: 10,
         },
+      ],
+    },
+    {
+      name: "Accesorios de Oficina",
+      items: [
         {
-          name: "Cinta de Aislar",
-          packagingType: "UNITARY" as const,
-          packs: 0,
-          unitsPerPack: 1,
-          totalUnits: 14,
+          name: "Pilas Alcalinas AA (Paquete)",
+          packagingType: "PACKAGED" as const,
+          packs: 15,
+          unitsPerPack: 4,
+          totalUnits: 60,
         },
         {
-          name: "Alcohol Isopropílico 1L",
+          name: "Pilas Alcalinas AAA (Paquete)",
+          packagingType: "PACKAGED" as const,
+          packs: 15,
+          unitsPerPack: 4,
+          totalUnits: 60,
+        },
+        {
+          name: "Grapadoras de Escritorio",
           packagingType: "UNITARY" as const,
           packs: 0,
           unitsPerPack: 1,
-          totalUnits: 5,
+          totalUnits: 8,
+        },
+        {
+          name: "Cajas de Grapas Estándar",
+          packagingType: "PACKAGED" as const,
+          packs: 10,
+          unitsPerPack: 1000,
+          totalUnits: 10000,
+        },
+        {
+          name: "Carpetas de Archivo Tamaño Carta",
+          packagingType: "PACKAGED" as const,
+          packs: 5,
+          unitsPerPack: 25,
+          totalUnits: 125,
         },
       ],
     },
@@ -203,7 +226,7 @@ async function main() {
     }
   }
 
-  console.log("✅ Módulos e items base creados exitosamente.");
+  console.log("✅ Módulos e items de oficina creados exitosamente.");
   console.log("🎉 Seed completado.");
 }
 

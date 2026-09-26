@@ -70,8 +70,9 @@ export function AddStockModal({
       if (!res.success) {
         onErrorRevert(res.error || "Error al ingresar stock");
       }
-    } catch (err: any) {
-      onErrorRevert(err?.message || "Error de comunicación al registrar la entrada");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error de comunicación al registrar la entrada";
+      onErrorRevert(msg);
     } finally {
       setLoading(false);
     }
@@ -175,7 +176,7 @@ export function AddStockModal({
               required
               value={motive}
               onChange={(e) => setMotive(e.target.value)}
-              placeholder="Ej. Compra directa, Donación de patrocinador, Devolución..."
+              placeholder="Ej. Compra mensual de papelería, Reposición de tóners, Devolución..."
               className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>

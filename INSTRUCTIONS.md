@@ -14,21 +14,25 @@ Sistema de inventario y gestión de consumo de materiales para integrantes y eve
 - **PWA & Notificaciones:** next-pwa, Web Push API
 
 # Reglas de Negocio y Lógica
-1. **Módulos de Inventario:**
-   - Módulos base: Papelería, Electrónicos, Herramientas, Componentes, Insumos.
+1. **Módulos de Inventario (Entorno de Oficina):**
+   - Módulos base: Papelería, Consumibles de Impresión, Equipo y Cómputo, Accesorios de Oficina.
    - Tipos de artículo:
-     - *Empaquetado:* Define nombre, cantidad de paquetes, unidades por paquete y **umbral de stock bajo**.
-     - *Unitario:* Define nombre, cantidad de unidades y **umbral de stock bajo**.
+     - *Empaquetado:* Define nombre, cantidad de paquetes, unidades por paquete y umbral de stock.
+     - *Unitario:* Define nombre, cantidad de unidades y umbral de stock.
 2. **Gestión de Stock:**
    - La vista de inventario muestra las cantidades en texto plano (sin alertas de colores por bajo stock).
    - El inventario se actualiza transaccionalmente (entradas y salidas).
-3. **Registro de Consumo (Salidas) e Inmutabilidad:**
-   - Al retirar stock, se debe registrar obligatoriamente: Qué se tomó, cantidad, usuario responsable y **motivo**.
-   - Si el motivo es un "Evento", debe habilitarse un campo de texto para especificar su nombre.
-   - **Inmutabilidad:** Las transacciones NUNCA se editan ni se borran. Cualquier error de captura humano se soluciona registrando una nueva transacción compensatoria (ej. entrada por "corrección").
-4. **Notificaciones y Correos:**
-   - **Push (Móviles):** Alertas (opcionales por usuario) sobre stock bajo (cuando las unidades caen por debajo del umbral del artículo) y confirmaciones de movimientos.
-   - **Email (Transaccional):** Aviso automático al usuario cuando su cuenta es aprobada por un administrador y flujo de recuperación de contraseñas.
+3. **Registro de Consumo (Salidas) y Motivos:**
+   - Al retirar stock, el motivo de salida está estrictamente limitado a 3 opciones:
+     - **Para mi**
+     - **Para evento** (requiere especificar el nombre del evento)
+     - **Para la coordinación**
+   - **Inmutabilidad:** Las transacciones NUNCA se editan ni se borran. Cualquier error de captura humano se soluciona registrando una nueva transacción compensatoria.
+   - **Visualización en App:** El historial y auditoría de movimientos se consulta exclusivamente en la interfaz web/PWA (sin exportación a Excel).
+4. **Seguridad y Verificación 2FA (OTP):**
+   - Verificación en Dos Pasos obligatoria para inicio de sesión: tras validar contraseña, se genera y envía un código OTP de 6 dígitos al correo del usuario registrado. Solo tras validar dicho código se concede acceso al sistema.
+5. **Notificaciones:**
+   - **Push (Móviles):** Alertas sobre stock bajo y confirmaciones de movimientos.
 
 # Roles y Permisos
 - **Administrador:**

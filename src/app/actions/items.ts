@@ -80,8 +80,11 @@ export async function createItem(formData: FormData): Promise<ActionResult> {
 export async function deleteItem(itemId: string): Promise<ActionResult> {
   try {
     const session = await auth();
-    if (!session?.user) {
-      return { success: false, error: "No autenticado. Por favor inicia sesión de nuevo." };
+    if (!session?.user || session.user.role !== "ADMIN") {
+      return {
+        success: false,
+        error: "Solo los administradores pueden eliminar artículos del inventario",
+      };
     }
 
     const existing = await prisma.item.findUnique({
@@ -99,11 +102,12 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/modules");
     return { success: true };
-  } catch (error: any) {
-    console.error("Error al eliminar artículo:", error);
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : "Error al eliminar el artículo de la base de datos";
+    console.error("Error al eliminar artículo:", errMessage);
     return {
       success: false,
-      error: error?.message || "Error al eliminar el artículo de la base de datos",
+      error: errMessage,
     };
   }
 }

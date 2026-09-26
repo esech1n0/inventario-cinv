@@ -27,12 +27,13 @@ export function PushNotificationToggle() {
 
   useEffect(() => {
     if (typeof window !== "undefined" && "serviceWorker" in navigator && "PushManager" in window) {
-      setIsSupported(true);
-      setPermission(Notification.permission);
-
       navigator.serviceWorker
         .register("/sw.js")
-        .then((reg) => reg.pushManager.getSubscription())
+        .then((reg) => {
+          setIsSupported(true);
+          setPermission(Notification.permission);
+          return reg.pushManager.getSubscription();
+        })
         .then((sub) => {
           setIsSubscribed(!!sub);
         })

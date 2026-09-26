@@ -36,7 +36,7 @@ describe("Validaciones Zod - Reglas de Negocio", () => {
     it("debe validar un artículo unitario", () => {
       const result = createItemSchema.safeParse({
         moduleId: "cl12345678901234567890123",
-        name: "Cautín para soldar",
+        name: "Sello de Coordinación",
         packagingType: "UNITARY",
         packs: 0,
         unitsPerPack: 1,
@@ -57,25 +57,56 @@ describe("Validaciones Zod - Reglas de Negocio", () => {
   });
 
   describe("createTransactionSchema", () => {
-    it("debe validar una transacción de salida con motivo", () => {
+    it("debe validar una transacción de salida con motivo 'Para la coordinación'", () => {
       const result = createTransactionSchema.safeParse({
         itemId: "cl12345678901234567890123",
         transactionType: "OUT",
         quantity: 5,
-        motive: "Uso general en laboratorio",
+        motive: "Para la coordinación",
       });
       expect(result.success).toBe(true);
     });
 
-    it("debe validar una transacción con evento", () => {
+    it("debe validar una transacción de salida con motivo 'Para mi'", () => {
+      const result = createTransactionSchema.safeParse({
+        itemId: "cl12345678901234567890123",
+        transactionType: "OUT",
+        quantity: 2,
+        motive: "Para mi",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe validar una transacción de salida con motivo 'Para evento' y nombre de evento", () => {
       const result = createTransactionSchema.safeParse({
         itemId: "cl12345678901234567890123",
         transactionType: "OUT",
         quantity: 10,
-        motive: "Evento",
-        eventName: "Hackathon CINV 2026",
+        motive: "Para evento",
+        eventName: "Reunión Anual CINV 2026",
       });
       expect(result.success).toBe(true);
+    });
+
+    it("debe rechazar motivo 'Para evento' si no se proporciona el nombre del evento", () => {
+      const result = createTransactionSchema.safeParse({
+        itemId: "cl12345678901234567890123",
+        transactionType: "OUT",
+        quantity: 3,
+        motive: "Para evento",
+        eventName: "",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar motivos no autorizados en retiros", () => {
+      const result = createTransactionSchema.safeParse({
+        itemId: "cl12345678901234567890123",
+        transactionType: "OUT",
+        quantity: 1,
+        motive: "Uso general en laboratorio",
+      });
+      expect(result.success).toBe(false);
     });
 
     it("debe rechazar cantidades menores a 1", () => {
@@ -83,7 +114,7 @@ describe("Validaciones Zod - Reglas de Negocio", () => {
         itemId: "cl12345678901234567890123",
         transactionType: "OUT",
         quantity: 0,
-        motive: "Prueba",
+        motive: "Para mi",
       });
       expect(result.success).toBe(false);
     });
@@ -118,6 +149,32 @@ describe("Validaciones Zod - Reglas de Negocio", () => {
         confirmPassword: "password123",
       });
       expect(result.success).toBe(true);
+    });
+  });
+
+  describe("loginSchema", () => {
+    it("debe validar credenciales de login válidas", () => {
+      const result = loginSchema.safeParse({
+        email: "admin@cinv.org",
+        password: "password123",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe rechazar correo inválido en login", () => {
+      const result = loginSchema.safeParse({
+        email: "not-an-email",
+        password: "password123",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar contraseña corta en login", () => {
+      const result = loginSchema.safeParse({
+        email: "admin@cinv.org",
+        password: "123",
+      });
+      expect(result.success).toBe(false);
     });
   });
 });

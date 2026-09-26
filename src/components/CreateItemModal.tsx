@@ -152,7 +152,7 @@ export function CreateItemModal({
               required
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Ej. Cautín para soldar, Resistencia 10k, Hojas..."
+              placeholder="Ej. Plumas azules, Tóner HP LaserJet, Post-its, Laptops, Extensiones..."
               className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
@@ -173,7 +173,7 @@ export function CreateItemModal({
               >
                 <span className="text-sm font-bold text-foreground">Unitario</span>
                 <span className="text-[11px] leading-tight text-muted-foreground">
-                  Piezas sueltas (ej. cables, herramientas, multímetros)
+                  Piezas sueltas (ej. sellos, grapadoras, tijeras, laptops, extensiones)
                 </span>
               </button>
 
@@ -188,7 +188,7 @@ export function CreateItemModal({
               >
                 <span className="text-sm font-bold text-foreground">Empaquetado</span>
                 <span className="text-[11px] leading-tight text-muted-foreground">
-                  Por cajas o paquetes (ej. hojas resma, cajas de plumas)
+                  Por cajas o paquetes (ej. resmas de hojas, cajas de plumas, post-its)
                 </span>
               </button>
             </div>

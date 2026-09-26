@@ -41,7 +41,7 @@ export function WithdrawModal({
 }: WithdrawModalProps) {
   const [itemId, setItemId] = useState(selectedItemId || (items[0]?.id ?? ""));
   const [quantity, setQuantity] = useState(1);
-  const [motive, setMotive] = useState("Uso General");
+  const [motive, setMotive] = useState("Para mi");
   const [eventName, setEventName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -49,7 +49,7 @@ export function WithdrawModal({
   if (!isOpen) return null;
 
   const currentItem = items.find((i) => i.id === itemId) || items[0];
-  const isEventMotive = motive === "Evento";
+  const isEventMotive = motive === "Para evento";
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -97,8 +97,9 @@ export function WithdrawModal({
       if (!res.success) {
         onErrorRevert(res.error || "Error al retirar stock");
       }
-    } catch (err: any) {
-      onErrorRevert(err?.message || "Error de comunicación al registrar la salida");
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Error de comunicación al registrar la salida";
+      onErrorRevert(msg);
     } finally {
       setLoading(false);
     }
@@ -212,12 +213,9 @@ export function WithdrawModal({
               onChange={(e) => setMotive(e.target.value)}
               className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
             >
-              <option value="Uso General">Uso General</option>
-              <option value="Evento">Evento</option>
-              <option value="Taller / Capacitación">Taller / Capacitación</option>
-              <option value="Mantenimiento">Mantenimiento</option>
-              <option value="Préstamo">Préstamo</option>
-              <option value="Otro">Otro</option>
+              <option value="Para mi">Para mi</option>
+              <option value="Para evento">Para evento</option>
+              <option value="Para la coordinación">Para la coordinación</option>
             </select>
           </div>
 
@@ -232,7 +230,7 @@ export function WithdrawModal({
                 required
                 value={eventName}
                 onChange={(e) => setEventName(e.target.value)}
-                placeholder="Ej. Hackathon CINV 2026, Taller de Robótica..."
+                placeholder="Ej. Junta directiva, Presentación de proyectos, Taller administrativo..."
                 className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <p className="text-[11px] text-muted-foreground">

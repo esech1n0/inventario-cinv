@@ -8,7 +8,6 @@ import {
   Search,
   Calendar,
   User,
-  FileSpreadsheet,
 } from "lucide-react";
 
 interface TransactionItem {
@@ -53,47 +52,6 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
     return matchesType && matchesSearch;
   });
 
-  function exportCSV() {
-    const headers = [
-      "Fecha",
-      "Tipo",
-      "Articulo",
-      "Modulo",
-      "Cantidad",
-      "Usuario",
-      "Email",
-      "Motivo",
-      "Evento",
-    ];
-
-    const rows = filtered.map((tx) => [
-      new Date(tx.createdAt).toLocaleString("es-MX"),
-      tx.transactionType === "OUT" ? "SALIDA" : "ENTRADA",
-      `"${tx.item.name.replace(/"/g, '""')}"`,
-      `"${tx.item.module.name.replace(/"/g, '""')}"`,
-      tx.quantity,
-      `"${tx.user.name.replace(/"/g, '""')}"`,
-      tx.user.email,
-      `"${tx.motive.replace(/"/g, '""')}"`,
-      tx.eventName ? `"${tx.eventName.replace(/"/g, '""')}"` : "",
-    ]);
-
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      [headers.join(","), ...rows.map((e) => e.join(","))].join("\n");
-
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute(
-      "download",
-      `auditoria_inventario_${new Date().toISOString().slice(0, 10)}.csv`
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  }
-
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -105,15 +63,6 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             Trazabilidad completa de consumo, entradas y salidas de material
           </p>
         </div>
-
-        <button
-          onClick={exportCSV}
-          disabled={filtered.length === 0}
-          className="flex items-center justify-center gap-2 rounded-xl border border-border bg-card px-4 py-2.5 text-sm font-semibold text-foreground hover:bg-muted active:scale-95 transition-all disabled:opacity-50"
-        >
-          <FileSpreadsheet className="h-4 w-4 text-success" />
-          Exportar CSV
-        </button>
       </div>
 
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

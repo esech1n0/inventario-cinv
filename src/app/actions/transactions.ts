@@ -44,7 +44,7 @@ export async function createTransaction(
 
     const { itemId, transactionType, motive, eventName } = parsed.data;
 
-    // Transacción atómica en Prisma
+    // Transacción atómica en Prisma con defensa contra condiciones de carrera (TOCTOU)
     const result = await prisma.$transaction(async (tx) => {
       const item = await tx.item.findUnique({
         where: { id: itemId },
@@ -59,27 +59,42 @@ export async function createTransaction(
       let newPacks = item.packs;
 
       if (transactionType === "OUT") {
-        newTotalUnits -= quantity;
-        if (newTotalUnits < 0) {
+        // Actualización condicional atómica: garantiza que no baje de 0 incluso bajo concurrencia
+        const updateCount = await tx.item.updateMany({
+          where: {
+            id: itemId,
+            totalUnits: { gte: quantity },
+          },
+          data: {
+            totalUnits: { decrement: quantity },
+          },
+        });
+
+        if (updateCount.count === 0) {
           return {
             success: false as const,
             error: `Stock insuficiente. Disponible: ${item.totalUnits} unidades`,
           };
         }
+
+        newTotalUnits = item.totalUnits - quantity;
         if (item.packagingType === "PACKAGED" && item.unitsPerPack > 0) {
           newPacks = Math.floor(newTotalUnits / item.unitsPerPack);
+          await tx.item.update({
+            where: { id: itemId },
+            data: { packs: newPacks },
+          });
         }
       } else {
         newTotalUnits += quantity;
         if (item.packagingType === "PACKAGED" && item.unitsPerPack > 0) {
           newPacks = Math.floor(newTotalUnits / item.unitsPerPack);
         }
+        await tx.item.update({
+          where: { id: itemId },
+          data: { totalUnits: newTotalUnits, packs: newPacks },
+        });
       }
-
-      await tx.item.update({
-        where: { id: itemId },
-        data: { totalUnits: newTotalUnits, packs: newPacks },
-      });
 
       await tx.transaction.create({
         data: {
@@ -130,11 +145,12 @@ export async function createTransaction(
     }
 
     return { success: false, error: result.error };
-  } catch (error: any) {
-    console.error("Error en createTransaction:", error);
+  } catch (error: unknown) {
+    const errMessage = error instanceof Error ? error.message : "Error al procesar el movimiento en la base de datos";
+    console.error("Error en createTransaction:", errMessage);
     return {
       success: false,
-      error: error?.message || "Error al procesar el movimiento en la base de datos",
+      error: errMessage,
     };
   }
 }

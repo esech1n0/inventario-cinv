@@ -260,7 +260,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   required
                   value={newModuleName}
                   onChange={(e) => setNewModuleName(e.target.value)}
-                  placeholder="Ej. Alimentos y Bebidas, Robótica, Material Médico..."
+                  placeholder="Ej. Papelería, Consumibles de Impresión, Equipo de Cómputo..."
                   className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>
@@ -327,7 +327,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   required
                   value={editingModuleName}
                   onChange={(e) => setEditingModuleName(e.target.value)}
-                  placeholder="Ej. Alimentos y Bebidas"
+                  placeholder="Ej. Consumibles de Impresión"
                   className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
                 />
               </div>

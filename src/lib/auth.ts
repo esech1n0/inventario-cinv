@@ -38,10 +38,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         if (!isValid) return null;
 
-        if (!user.isApproved) {
-          throw new Error("ACCOUNT_NOT_APPROVED");
-        }
-
         // Validación estricta del 2FA (OTP)
         const otpResult = await verifyAndConsumeOTP(user.email, rawOtp);
         if (!otpResult.success) {
@@ -53,7 +49,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           email: user.email,
           name: user.name,
           role: user.role,
-          isApproved: user.isApproved,
+          isApproved: true,
         };
       },
     }),

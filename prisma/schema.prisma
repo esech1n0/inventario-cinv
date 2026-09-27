@@ -28,7 +28,7 @@ model User {
   passwordHash     String
   name             String
   role             Role      @default(USER)
-  isApproved       Boolean   @default(false)
+  isApproved       Boolean   @default(true)
   pushSubscription String?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname } from "next/navigation";
@@ -10,9 +11,11 @@ import {
   Users,
   ShieldCheck,
   User as UserIcon,
+  KeyRound,
 } from "lucide-react";
 import { PushNotificationToggle } from "@/components/PushNotificationToggle";
 import { LogoutButton } from "@/components/LogoutButton";
+import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 
 interface NavigationProps {
   user: {
@@ -24,6 +27,7 @@ interface NavigationProps {
 
 export function Navigation({ user }: NavigationProps) {
   const pathname = usePathname();
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
   const isAdmin = user.role === "ADMIN";
 
   const navLinks = [
@@ -126,6 +130,16 @@ export function Navigation({ user }: NavigationProps) {
               </div>
             </div>
 
+            {/* Botón cambiar mi contraseña */}
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              title="Cambiar mi contraseña"
+              className="flex items-center gap-1.5 rounded-xl border border-border bg-background px-2.5 py-1.5 text-xs font-semibold text-muted-foreground hover:bg-muted hover:text-foreground transition-all active:scale-95"
+            >
+              <KeyRound className="h-3.5 w-3.5 text-primary" />
+              <span className="hidden sm:inline">Contraseña</span>
+            </button>
+
             <LogoutButton />
           </div>
         </div>
@@ -157,6 +171,13 @@ export function Navigation({ user }: NavigationProps) {
           );
         })}
       </nav>
+
+      {/* Modal para cambiar contraseña propia */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        userEmail={user.email}
+      />
     </>
   );
 }

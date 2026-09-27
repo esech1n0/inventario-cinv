@@ -2,8 +2,8 @@
 
 import bcryptjs from "bcryptjs";
 import { prisma } from "@/lib/prisma";
-import { signIn } from "@/lib/auth";
-import { registerSchema, loginSchema } from "@/lib/validations";
+import { signIn, auth } from "@/lib/auth";
+import { registerSchema, loginSchema, changeMyPasswordSchema } from "@/lib/validations";
 import { createAndStoreOTP } from "@/lib/otp";
 import { sendOTPEmail } from "@/lib/email";
 import { AuthError } from "next-auth";
@@ -14,40 +14,53 @@ export type ActionResult<T = unknown> = {
   data?: T;
 };
 
-export async function registerUser(formData: FormData): Promise<ActionResult> {
+export async function registerUser(_formData: FormData): Promise<ActionResult> {
+  return {
+    success: false,
+    error: "El registro público está deshabilitado. Las cuentas son ingresadas directamente por el administrador.",
+  };
+}
+
+/**
+ * Permite al usuario autenticado cambiar su propia contraseña.
+ */
+export async function changeMyPassword(formData: FormData): Promise<ActionResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { success: false, error: "Debes iniciar sesión para cambiar tu contraseña" };
+  }
+
   const raw = {
-    name: formData.get("name") as string,
-    email: (formData.get("email") as string)?.toLowerCase().trim(),
-    password: formData.get("password") as string,
+    currentPassword: formData.get("currentPassword") as string,
+    newPassword: formData.get("newPassword") as string,
     confirmPassword: formData.get("confirmPassword") as string,
   };
 
-  const parsed = registerSchema.safeParse(raw);
+  const parsed = changeMyPasswordSchema.safeParse(raw);
   if (!parsed.success) {
     return {
       success: false,
-      error: parsed.error.issues[0]?.message || "Datos inválidos",
+      error: parsed.error.issues[0]?.message || "Datos no válidos",
     };
   }
 
-  const existing = await prisma.user.findUnique({
-    where: { email: parsed.data.email },
+  const user = await prisma.user.findUnique({
+    where: { id: session.user.id },
   });
 
-  if (existing) {
-    return { success: false, error: "Este correo ya está registrado" };
+  if (!user) {
+    return { success: false, error: "Usuario no encontrado" };
   }
 
-  const passwordHash = await bcryptjs.hash(parsed.data.password, 12);
+  const isMatch = await bcryptjs.compare(parsed.data.currentPassword, user.passwordHash);
+  if (!isMatch) {
+    return { success: false, error: "La contraseña actual es incorrecta" };
+  }
 
-  await prisma.user.create({
-    data: {
-      name: parsed.data.name.trim(),
-      email: parsed.data.email,
-      passwordHash,
-      role: "USER",
-      isApproved: false,
-    },
+  const passwordHash = await bcryptjs.hash(parsed.data.newPassword, 12);
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { passwordHash },
   });
 
   return { success: true };
@@ -94,13 +107,6 @@ export async function requestLoginOTP(formData: FormData): Promise<RequestOTPRes
 
   if (!isValidPassword) {
     return { success: false, error: "Credenciales inválidas" };
-  }
-
-  if (!user.isApproved) {
-    return {
-      success: false,
-      error: "Tu cuenta aún no ha sido aprobada por un administrador",
-    };
   }
 
   // Generar y almacenar OTP
@@ -169,12 +175,6 @@ export async function loginWithOTP(formData: FormData): Promise<ActionResult> {
   } catch (error) {
     if (error instanceof AuthError) {
       const msg = error.message || "";
-      if (msg.includes("ACCOUNT_NOT_APPROVED")) {
-        return {
-          success: false,
-          error: "Tu cuenta aún no ha sido aprobada por un administrador",
-        };
-      }
       if (msg.includes("Demasiados intentos")) {
         return {
           success: false,

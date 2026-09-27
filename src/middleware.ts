@@ -9,7 +9,11 @@ export default auth((req) => {
   const isLoggedIn = !!req.auth?.user;
 
   // Public routes
-  const publicRoutes = ["/login", "/register"];
+  if (pathname.startsWith("/register")) {
+    return NextResponse.redirect(new URL("/login", req.url));
+  }
+
+  const publicRoutes = ["/login"];
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route)
   );

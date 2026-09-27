@@ -355,14 +355,8 @@ export default function LoginPage() {
                 <KeyRound className="h-4 w-4" />
               </button>
 
-              <div className="mt-5 text-center text-sm text-muted-foreground">
-                ¿No tienes cuenta?{" "}
-                <Link
-                  href="/register"
-                  className="font-semibold text-primary hover:underline"
-                >
-                  Regístrate aquí
-                </Link>
+              <div className="mt-5 text-center text-xs text-muted-foreground">
+                Acceso exclusivo para integrantes autorizados por la administración.
               </div>
             </form>
           )}

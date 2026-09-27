@@ -5,6 +5,9 @@ import {
   createTransactionSchema,
   registerSchema,
   loginSchema,
+  changeMyPasswordSchema,
+  adminChangePasswordSchema,
+  updateRoleSchema,
 } from "@/lib/validations";
 
 describe("Validaciones Zod - Reglas de Negocio", () => {
@@ -173,6 +176,85 @@ describe("Validaciones Zod - Reglas de Negocio", () => {
       const result = loginSchema.safeParse({
         email: "admin@cinv.org",
         password: "123",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("changeMyPasswordSchema", () => {
+    it("debe validar cambio de contraseña correcto", () => {
+      const result = changeMyPasswordSchema.safeParse({
+        currentPassword: "OldPassword123!",
+        newPassword: "NewPassword123!",
+        confirmPassword: "NewPassword123!",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe rechazar si las nuevas contraseñas no coinciden", () => {
+      const result = changeMyPasswordSchema.safeParse({
+        currentPassword: "OldPassword123!",
+        newPassword: "NewPassword123!",
+        confirmPassword: "DifferentPassword123!",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar nueva contraseña menor a 6 caracteres", () => {
+      const result = changeMyPasswordSchema.safeParse({
+        currentPassword: "OldPassword123!",
+        newPassword: "123",
+        confirmPassword: "123",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar si falta la contraseña actual", () => {
+      const result = changeMyPasswordSchema.safeParse({
+        currentPassword: "",
+        newPassword: "NewPassword123!",
+        confirmPassword: "NewPassword123!",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("adminChangePasswordSchema", () => {
+    it("debe validar cambio de contraseña por admin", () => {
+      const result = adminChangePasswordSchema.safeParse({
+        newPassword: "AdminReset123!",
+        confirmPassword: "AdminReset123!",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe rechazar si contraseñas no coinciden en cambio por admin", () => {
+      const result = adminChangePasswordSchema.safeParse({
+        newPassword: "AdminReset123!",
+        confirmPassword: "OtherReset123!",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("updateRoleSchema", () => {
+    it("debe validar rol ADMIN y USER", () => {
+      const r1 = updateRoleSchema.safeParse({
+        userId: "usr_123",
+        role: "ADMIN",
+      });
+      const r2 = updateRoleSchema.safeParse({
+        userId: "usr_123",
+        role: "USER",
+      });
+      expect(r1.success).toBe(true);
+      expect(r2.success).toBe(true);
+    });
+
+    it("debe rechazar rol desconocido", () => {
+      const result = updateRoleSchema.safeParse({
+        userId: "usr_123",
+        role: "SUPERADMIN",
       });
       expect(result.success).toBe(false);
     });

@@ -18,6 +18,32 @@ export const registerSchema = z
     path: ["confirmPassword"],
   });
 
+export const changeMyPasswordSchema = z
+  .object({
+    currentPassword: z.string().min(1, "La contraseña actual es requerida"),
+    newPassword: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+
+export const adminChangePasswordSchema = z
+  .object({
+    newPassword: z.string().min(6, "La nueva contraseña debe tener al menos 6 caracteres"),
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.newPassword === data.confirmPassword, {
+    message: "Las contraseñas no coinciden",
+    path: ["confirmPassword"],
+  });
+
+export const updateRoleSchema = z.object({
+  userId: z.string().min(1, "El ID de usuario es requerido"),
+  role: z.enum(["ADMIN", "USER"]),
+});
+
 // ─── Module Schemas ───────────────────────────────────────────
 export const createModuleSchema = z.object({
   name: z.string().min(1, "El nombre del módulo es requerido").max(50),
@@ -79,6 +105,9 @@ export const createTransactionSchema = z
 // ─── Types ────────────────────────────────────────────────────
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type ChangeMyPasswordInput = z.infer<typeof changeMyPasswordSchema>;
+export type AdminChangePasswordInput = z.infer<typeof adminChangePasswordSchema>;
+export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;
 export type CreateModuleInput = z.infer<typeof createModuleSchema>;
 export type CreateItemInput = z.infer<typeof createItemSchema>;
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;

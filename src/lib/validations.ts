@@ -39,6 +39,13 @@ export const adminChangePasswordSchema = z
     path: ["confirmPassword"],
   });
 
+export const createUserSchema = z.object({
+  name: z.string().min(2, "El nombre debe tener al menos 2 caracteres").max(70, "El nombre no puede exceder 70 caracteres"),
+  email: z.string().email("Correo electrónico inválido"),
+  password: z.string().min(6, "La contraseña debe tener al menos 6 caracteres"),
+  role: z.enum(["ADMIN", "USER"]),
+});
+
 export const updateRoleSchema = z.object({
   userId: z.string().min(1, "El ID de usuario es requerido"),
   role: z.enum(["ADMIN", "USER"]),
@@ -105,6 +112,7 @@ export const createTransactionSchema = z
 // ─── Types ────────────────────────────────────────────────────
 export type LoginInput = z.infer<typeof loginSchema>;
 export type RegisterInput = z.infer<typeof registerSchema>;
+export type CreateUserInput = z.infer<typeof createUserSchema>;
 export type ChangeMyPasswordInput = z.infer<typeof changeMyPasswordSchema>;
 export type AdminChangePasswordInput = z.infer<typeof adminChangePasswordSchema>;
 export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;

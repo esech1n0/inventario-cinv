@@ -11,9 +11,12 @@ import {
   Loader2,
   KeyRound,
   Search,
+  UserPlus,
 } from "lucide-react";
 import { updateUserRole, deleteUser } from "@/app/actions/users";
 import { AdminChangePasswordModal } from "@/components/AdminChangePasswordModal";
+import { AddUserModal } from "@/components/AddUserModal";
+import type { CreatedUserData } from "@/app/actions/users";
 
 interface UserItem {
   id: string;
@@ -36,9 +39,19 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [banner, setBanner] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const [passwordModalUser, setPasswordModalUser] = useState<UserItem | null>(null);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   const adminCount = users.filter((u) => u.role === "ADMIN").length;
   const memberCount = users.filter((u) => u.role === "USER").length;
+
+  function handleUserCreated(newUser: CreatedUserData) {
+    setUsers((prev) => [newUser, ...prev]);
+    setBanner({
+      type: "success",
+      text: `Usuario ${newUser.name} registrado con éxito. Ya puede ingresar con sus credenciales.`,
+    });
+    setTimeout(() => setBanner(null), 5000);
+  }
 
   const filteredUsers = users.filter((u) => {
     const matchesSearch =
@@ -134,40 +147,52 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
           </p>
         </div>
 
-        {/* Filtros de rol */}
-        <div className="flex items-center gap-1.5 rounded-2xl border border-border bg-card p-1">
+        <div className="flex items-center gap-2.5 flex-wrap">
+          {/* Botón Agregar Usuario */}
           <button
-            onClick={() => setRoleFilter("ALL")}
-            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-              roleFilter === "ALL"
-                ? "bg-foreground text-background shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
+            type="button"
+            onClick={() => setIsAddModalOpen(true)}
+            className="flex items-center gap-2 rounded-2xl bg-primary px-3.5 py-2 text-xs sm:text-sm font-semibold text-primary-foreground shadow-md shadow-primary/20 hover:bg-primary-hover active:scale-95 transition-all"
           >
-            Todos ({users.length})
+            <UserPlus className="h-4 w-4" />
+            <span>Agregar Usuario</span>
           </button>
-          <button
-            onClick={() => setRoleFilter("ADMIN")}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-              roleFilter === "ADMIN"
-                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <ShieldCheck className="h-3.5 w-3.5" />
-            <span>Admins ({adminCount})</span>
-          </button>
-          <button
-            onClick={() => setRoleFilter("USER")}
-            className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
-              roleFilter === "USER"
-                ? "bg-secondary text-secondary-foreground shadow-sm"
-                : "text-muted-foreground hover:text-foreground"
-            }`}
-          >
-            <User className="h-3.5 w-3.5" />
-            <span>Integrantes ({memberCount})</span>
-          </button>
+
+          {/* Filtros de rol */}
+          <div className="flex items-center gap-1.5 rounded-2xl border border-border bg-card p-1">
+            <button
+              onClick={() => setRoleFilter("ALL")}
+              className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                roleFilter === "ALL"
+                  ? "bg-foreground text-background shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              Todos ({users.length})
+            </button>
+            <button
+              onClick={() => setRoleFilter("ADMIN")}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                roleFilter === "ADMIN"
+                  ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>Admins ({adminCount})</span>
+            </button>
+            <button
+              onClick={() => setRoleFilter("USER")}
+              className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                roleFilter === "USER"
+                  ? "bg-secondary text-secondary-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <User className="h-3.5 w-3.5" />
+              <span>Integrantes ({memberCount})</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -331,6 +356,13 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
         isOpen={!!passwordModalUser}
         onClose={() => setPasswordModalUser(null)}
         user={passwordModalUser}
+      />
+
+      {/* Modal para registrar un nuevo usuario */}
+      <AddUserModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onUserCreated={handleUserCreated}
       />
     </div>
   );

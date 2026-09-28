@@ -5,6 +5,7 @@ import {
   createTransactionSchema,
   registerSchema,
   loginSchema,
+  createUserSchema,
   changeMyPasswordSchema,
   adminChangePasswordSchema,
   updateRoleSchema,
@@ -232,6 +233,68 @@ describe("Validaciones Zod - Reglas de Negocio", () => {
       const result = adminChangePasswordSchema.safeParse({
         newPassword: "AdminReset123!",
         confirmPassword: "OtherReset123!",
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("createUserSchema", () => {
+    it("debe validar la creación de un usuario con datos válidos", () => {
+      const result = createUserSchema.safeParse({
+        name: "Carlos Mendoza",
+        email: "carlos@cinv.org",
+        password: "securePassword123",
+        role: "USER",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe validar la creación de un administrador con datos válidos", () => {
+      const result = createUserSchema.safeParse({
+        name: "Administradora General",
+        email: "admin@cinv.org",
+        password: "adminPassword456",
+        role: "ADMIN",
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe rechazar nombres demasiado cortos (< 2 caracteres)", () => {
+      const result = createUserSchema.safeParse({
+        name: "A",
+        email: "usuario@cinv.org",
+        password: "securePassword123",
+        role: "USER",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar correos no válidos", () => {
+      const result = createUserSchema.safeParse({
+        name: "Carlos Mendoza",
+        email: "not-an-email",
+        password: "securePassword123",
+        role: "USER",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar contraseñas de menos de 6 caracteres", () => {
+      const result = createUserSchema.safeParse({
+        name: "Carlos Mendoza",
+        email: "carlos@cinv.org",
+        password: "12345",
+        role: "USER",
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar roles inválidos", () => {
+      const result = createUserSchema.safeParse({
+        name: "Carlos Mendoza",
+        email: "carlos@cinv.org",
+        password: "securePassword123",
+        role: "INVITADO",
       });
       expect(result.success).toBe(false);
     });

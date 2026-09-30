@@ -33,7 +33,7 @@ export async function createModule(formData: FormData): Promise<ActionResult> {
     });
 
     if (existing) {
-      return { success: false, error: "Ya existe un módulo con ese nombre" };
+      return { success: false, error: "Ya existe una categoría con ese nombre" };
     }
 
     await prisma.module.create({
@@ -42,12 +42,13 @@ export async function createModule(formData: FormData): Promise<ActionResult> {
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/modules");
+    revalidatePath("/dashboard/categories");
     return { success: true };
   } catch (error: any) {
-    console.error("Error al crear módulo:", error);
+    console.error("Error al crear categoría:", error);
     return {
       success: false,
-      error: error?.message || "Error al registrar el módulo en la base de datos",
+      error: error?.message || "Error al registrar la categoría en la base de datos",
     };
   }
 }
@@ -58,7 +59,7 @@ export async function deleteModule(moduleId: string): Promise<ActionResult> {
     if (!session?.user || session.user.role !== "ADMIN") {
       return {
         success: false,
-        error: "Solo los administradores pueden eliminar módulos",
+        error: "Solo los administradores pueden eliminar categorías",
       };
     }
 
@@ -68,12 +69,13 @@ export async function deleteModule(moduleId: string): Promise<ActionResult> {
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/modules");
+    revalidatePath("/dashboard/categories");
     return { success: true };
   } catch (error: any) {
-    console.error("Error al eliminar módulo:", error);
+    console.error("Error al eliminar categoría:", error);
     return {
       success: false,
-      error: error?.message || "Error al eliminar el módulo en la base de datos",
+      error: error?.message || "Error al eliminar la categoría en la base de datos",
     };
   }
 }
@@ -87,13 +89,13 @@ export async function updateModule(
     if (!session?.user || session.user.role !== "ADMIN") {
       return {
         success: false,
-        error: "Solo los administradores pueden editar módulos",
+        error: "Solo los administradores pueden editar categorías",
       };
     }
 
     const trimmed = newName.trim();
     if (!trimmed) {
-      return { success: false, error: "El nombre del módulo no puede estar vacío" };
+      return { success: false, error: "El nombre de la categoría no puede estar vacío" };
     }
 
     const existing = await prisma.module.findUnique({
@@ -101,7 +103,7 @@ export async function updateModule(
     });
 
     if (existing && existing.id !== moduleId) {
-      return { success: false, error: "Ya existe otro módulo con ese nombre" };
+      return { success: false, error: "Ya existe otra categoría con ese nombre" };
     }
 
     await prisma.module.update({
@@ -111,12 +113,13 @@ export async function updateModule(
 
     revalidatePath("/dashboard");
     revalidatePath("/dashboard/modules");
+    revalidatePath("/dashboard/categories");
     return { success: true };
   } catch (error: any) {
-    console.error("Error al actualizar módulo:", error);
+    console.error("Error al actualizar categoría:", error);
     return {
       success: false,
-      error: error?.message || "Error al actualizar el módulo en la base de datos",
+      error: error?.message || "Error al actualizar la categoría en la base de datos",
     };
   }
 }

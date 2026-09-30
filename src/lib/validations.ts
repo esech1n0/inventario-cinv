@@ -66,6 +66,16 @@ export const createItemSchema = z.object({
   totalUnits: z.number().int().min(0).default(0),
 });
 
+export const updateItemSchema = z.object({
+  itemId: z.string().min(1, "El ID del artículo es requerido"),
+  moduleId: z.string().min(1, "El ID de la categoría es requerido"),
+  name: z.string().min(1, "El nombre del artículo es requerido").max(100),
+  packagingType: z.enum(["UNITARY", "PACKAGED"]),
+  packs: z.number().int().min(0).default(0),
+  unitsPerPack: z.number().int().min(1).default(1),
+  totalUnits: z.number().int().min(0).default(0),
+});
+
 // ─── Transaction Schemas ──────────────────────────────────────
 export const WITHDRAW_MOTIVES = [
   "Para mi",
@@ -118,4 +128,5 @@ export type AdminChangePasswordInput = z.infer<typeof adminChangePasswordSchema>
 export type UpdateRoleInput = z.infer<typeof updateRoleSchema>;
 export type CreateModuleInput = z.infer<typeof createModuleSchema>;
 export type CreateItemInput = z.infer<typeof createItemSchema>;
+export type UpdateItemInput = z.infer<typeof updateItemSchema>;
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;

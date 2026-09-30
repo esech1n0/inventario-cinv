@@ -60,13 +60,13 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
     setLoading(false);
 
     if (!res.success) {
-      setError(res.error || "Error al crear módulo");
+      setError(res.error || "Error al crear la categoría");
     } else {
       setIsModalOpen(false);
       setNewModuleName("");
       setBanner({
         type: "success",
-        text: `Módulo "${newModuleName.trim()}" creado correctamente.`,
+        text: `Categoría "${newModuleName.trim()}" creada correctamente.`,
       });
       setTimeout(() => setBanner(null), 4000);
       window.location.reload();
@@ -92,7 +92,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
     setEditLoading(false);
 
     if (!res.success) {
-      setEditError(res.error || "Error al renombrar el módulo");
+      setEditError(res.error || "Error al renombrar la categoría");
     } else {
       setModules((prev) =>
         prev.map((m) => (m.id === editingModuleId ? { ...m, name: trimmed } : m))
@@ -102,7 +102,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
       setEditingModuleName("");
       setBanner({
         type: "success",
-        text: `Módulo actualizado a "${trimmed}".`,
+        text: `Categoría actualizada a "${trimmed}".`,
       });
       setTimeout(() => setBanner(null), 4000);
     }
@@ -110,14 +110,14 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
 
   async function handleDeleteModule(moduleId: string, moduleName: string, itemsCount: number) {
     if (!isAdmin) {
-      alert("Solo los administradores pueden eliminar módulos.");
+      alert("Solo los administradores pueden eliminar categorías.");
       return;
     }
 
     const confirmMsg =
       itemsCount > 0
-        ? `¡ADVERTENCIA! El módulo "${moduleName}" contiene ${itemsCount} artículo(s). Si lo eliminas, todos sus artículos y registros asociados serán eliminados permanentemente. ¿Deseas continuar?`
-        : `¿Estás seguro de eliminar el módulo "${moduleName}"?`;
+        ? `¡ADVERTENCIA! La categoría "${moduleName}" contiene ${itemsCount} artículo(s). Si la eliminas, todos sus artículos y registros asociados serán eliminados permanentemente. ¿Deseas continuar?`
+        : `¿Estás seguro de eliminar la categoría "${moduleName}"?`;
 
     if (!confirm(confirmMsg)) return;
 
@@ -127,13 +127,13 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
     if (!res.success) {
       setBanner({
         type: "error",
-        text: res.error || "No se pudo eliminar el módulo",
+        text: res.error || "No se pudo eliminar la categoría",
       });
       window.location.reload();
     } else {
       setBanner({
         type: "success",
-        text: `Módulo "${moduleName}" eliminado con éxito.`,
+        text: `Categoría "${moduleName}" eliminada con éxito.`,
       });
       setTimeout(() => setBanner(null), 4000);
     }
@@ -162,7 +162,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Módulos de Inventario
+            Categorías de Inventario
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             Categorización dinámica de materiales y suministros
@@ -175,11 +175,11 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
           className="flex items-center justify-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary-hover active:scale-95 transition-all"
         >
           <Plus className="h-4 w-4" />
-          Nuevo Módulo
+          Nueva Categoría
         </button>
       </div>
 
-      {/* Grid de Módulos */}
+      {/* Grid de Categorías */}
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {modules.map((mod) => (
           <div
@@ -197,14 +197,14 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => handleOpenEdit(mod)}
-                      title="Editar nombre del módulo"
+                      title="Editar nombre de la categoría"
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
                       onClick={() => handleDeleteModule(mod.id, mod.name, mod._count.items)}
-                      title="Eliminar módulo (Solo Admin)"
+                      title="Eliminar categoría (Solo Admin)"
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -212,7 +212,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   </div>
                 ) : (
                   <span className="text-[11px] text-muted-foreground font-medium">
-                    Módulo protegido
+                    Categoría protegida
                   </span>
                 )}
               </div>
@@ -234,11 +234,11 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
         ))}
       </div>
 
-      {/* Modal Nuevo Módulo */}
+      {/* Modal Nueva Categoría */}
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="animate-fade-in w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
-            <h2 className="text-lg font-bold text-foreground">Crear Nuevo Módulo</h2>
+            <h2 className="text-lg font-bold text-foreground">Crear Nueva Categoría</h2>
             <p className="mt-1 text-xs text-muted-foreground">
               Ingresa el nombre para la nueva categoría de inventario
             </p>
@@ -253,7 +253,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  Nombre del módulo *
+                  Nombre de la categoría *
                 </label>
                 <input
                   type="text"
@@ -282,7 +282,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Guardar Módulo
+                  Guardar Categoría
                 </button>
               </div>
             </form>
@@ -290,14 +290,14 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
         </div>
       )}
 
-      {/* Modal Editar Módulo */}
+      {/* Modal Editar Categoría */}
       {isEditOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="animate-fade-in w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <Pencil className="h-4 w-4 text-primary" />
-                <h2 className="text-lg font-bold text-foreground">Renombrar Módulo</h2>
+                <h2 className="text-lg font-bold text-foreground">Renombrar Categoría</h2>
               </div>
               <button
                 onClick={() => setIsEditOpen(false)}
@@ -307,7 +307,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
               </button>
             </div>
             <p className="mt-2 text-xs text-muted-foreground">
-              Modifica el nombre del módulo. Todos los artículos y transacciones vinculadas mantendrán su relación.
+              Modifica el nombre de la categoría. Todos los artículos y transacciones vinculadas mantendrán su relación.
             </p>
 
             <form onSubmit={handleUpdateModule} className="mt-4 space-y-4">
@@ -320,7 +320,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
 
               <div className="space-y-1.5">
                 <label className="text-xs font-semibold text-foreground">
-                  Nuevo nombre del módulo *
+                  Nuevo nombre de la categoría *
                 </label>
                 <input
                   type="text"
@@ -346,7 +346,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                   className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
                 >
                   {editLoading && <Loader2 className="h-4 w-4 animate-spin" />}
-                  Actualizar Nombre
+                  Actualizar Categoría
                 </button>
               </div>
             </form>

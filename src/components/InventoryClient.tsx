@@ -8,6 +8,7 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   Trash2,
+  Pencil,
   Box,
   Layers,
   AlertCircle,
@@ -16,9 +17,10 @@ import {
 import { WithdrawModal } from "@/components/WithdrawModal";
 import { AddStockModal } from "@/components/AddStockModal";
 import { CreateItemModal } from "@/components/CreateItemModal";
+import { EditItemModal } from "@/components/EditItemModal";
 import { deleteItem } from "@/app/actions/items";
 
-interface Item {
+export interface Item {
   id: string;
   moduleId: string;
   name: string;
@@ -67,6 +69,8 @@ export function InventoryClient({
   const [isWithdrawOpen, setIsWithdrawOpen] = useState(false);
   const [isAddStockOpen, setIsAddStockOpen] = useState(false);
   const [isCreateItemOpen, setIsCreateItemOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
   const [bannerMessage, setBannerMessage] = useState<{
     type: "success" | "error";
@@ -326,7 +330,7 @@ export function InventoryClient({
             </div>
             <div>
               <p className="text-xs font-medium text-muted-foreground">
-                Módulos Activos
+                Categorías Activas
               </p>
               <p className="text-xl font-bold text-foreground">
                 {modules.length}
@@ -344,7 +348,7 @@ export function InventoryClient({
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Buscar por nombre de artículo o módulo..."
+            placeholder="Buscar por nombre de artículo o categoría..."
             className="w-full rounded-2xl border border-input bg-card py-3 pl-10 pr-4 text-sm outline-none transition-all placeholder:text-muted-foreground focus:border-primary focus:ring-2 focus:ring-primary/20"
           />
         </div>
@@ -392,7 +396,7 @@ export function InventoryClient({
             <p className="mt-1 text-xs text-muted-foreground max-w-xs">
               {searchQuery
                 ? "No hay artículos que coincidan con la búsqueda actual."
-                : "Aún no hay artículos registrados en este módulo."}
+                : "Aún no hay artículos registrados en esta categoría."}
             </p>
             <button
               onClick={() => setIsCreateItemOpen(true)}
@@ -472,13 +476,25 @@ export function InventoryClient({
                   </button>
 
                   {userRole === "ADMIN" && (
-                    <button
-                      onClick={() => handleDeleteItem(item.id, item.name)}
-                      title="Eliminar artículo (Solo Admin)"
-                      className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive active:scale-95 transition-all"
-                    >
-                      <Trash2 className="h-3.5 w-3.5" />
-                    </button>
+                    <div className="flex items-center gap-1">
+                      <button
+                        onClick={() => {
+                          setEditingItem(item);
+                          setIsEditModalOpen(true);
+                        }}
+                        title="Editar artículo y existencias (Solo Admin)"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:bg-primary/10 hover:text-primary active:scale-95 transition-all"
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                      <button
+                        onClick={() => handleDeleteItem(item.id, item.name)}
+                        title="Eliminar artículo (Solo Admin)"
+                        className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:bg-destructive/10 hover:text-destructive active:scale-95 transition-all"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -522,6 +538,26 @@ export function InventoryClient({
             text: `Artículo "${newItem.name}" creado con éxito.`,
           });
           setTimeout(() => setBannerMessage(null), 4000);
+        }}
+      />
+
+      <EditItemModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingItem(null);
+        }}
+        item={editingItem}
+        modules={modules}
+        onSuccess={(updatedItem) => {
+          setItems((prev) =>
+            prev.map((i) => (i.id === updatedItem.id ? updatedItem : i))
+          );
+          setBannerMessage({
+            type: "success",
+            text: `Artículo "${updatedItem.name}" actualizado correctamente (sin registro en historial).`,
+          });
+          setTimeout(() => setBannerMessage(null), 5000);
         }}
       />
     </div>

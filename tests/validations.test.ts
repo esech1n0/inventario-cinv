@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   createItemSchema,
+  updateItemSchema,
   createModuleSchema,
   createTransactionSchema,
   registerSchema,
@@ -55,6 +56,58 @@ describe("Validaciones Zod - Reglas de Negocio", () => {
         name: "",
         packagingType: "UNITARY",
         totalUnits: 5,
+      });
+      expect(result.success).toBe(false);
+    });
+  });
+
+  describe("updateItemSchema", () => {
+    it("debe validar la edición de un artículo empaquetado", () => {
+      const result = updateItemSchema.safeParse({
+        itemId: "item_123",
+        moduleId: "mod_456",
+        name: "Plumas Negras Editadas",
+        packagingType: "PACKAGED",
+        packs: 10,
+        unitsPerPack: 12,
+        totalUnits: 120,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe validar la edición de un artículo unitario", () => {
+      const result = updateItemSchema.safeParse({
+        itemId: "item_123",
+        moduleId: "mod_456",
+        name: "Engrapadora",
+        packagingType: "UNITARY",
+        packs: 0,
+        unitsPerPack: 1,
+        totalUnits: 8,
+      });
+      expect(result.success).toBe(true);
+    });
+
+    it("debe rechazar la edición sin itemId", () => {
+      const result = updateItemSchema.safeParse({
+        itemId: "",
+        moduleId: "mod_456",
+        name: "Engrapadora",
+        packagingType: "UNITARY",
+        packs: 0,
+        unitsPerPack: 1,
+        totalUnits: 8,
+      });
+      expect(result.success).toBe(false);
+    });
+
+    it("debe rechazar la edición sin nombre", () => {
+      const result = updateItemSchema.safeParse({
+        itemId: "item_123",
+        moduleId: "mod_456",
+        name: "",
+        packagingType: "UNITARY",
+        totalUnits: 8,
       });
       expect(result.success).toBe(false);
     });

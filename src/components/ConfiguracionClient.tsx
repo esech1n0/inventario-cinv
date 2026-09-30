@@ -1,0 +1,336 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+  Settings,
+  User as UserIcon,
+  Mail,
+  ShieldCheck,
+  Bell,
+  BellOff,
+  KeyRound,
+  CheckCircle,
+  AlertCircle,
+  Loader2,
+  Sparkles,
+} from "lucide-react";
+import {
+  savePushSubscription,
+  removePushSubscription,
+} from "@/app/actions/notifications";
+import { ChangePasswordModal } from "@/components/ChangePasswordModal";
+
+interface ConfiguracionClientProps {
+  user: {
+    name: string;
+    email: string;
+    role: string;
+  };
+}
+
+function urlBase64ToUint8Array(base64String: string) {
+  const cleanKey = (base64String || "").replace(/["']/g, "").trim();
+  const padding = "=".repeat((4 - (cleanKey.length % 4)) % 4);
+  const base64 = (cleanKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+  const rawData = window.atob(base64);
+  const outputArray = new Uint8Array(rawData.length);
+  for (let i = 0; i < rawData.length; ++i) {
+    outputArray[i] = rawData.charCodeAt(i);
+  }
+  return outputArray;
+}
+
+export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  // Push notifications state
+  const [isPushSupported, setIsPushSupported] = useState(false);
+  const [isSubscribed, setIsSubscribed] = useState(false);
+  const [pushLoading, setPushLoading] = useState(false);
+  const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
+  const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+
+  const isAdmin = user.role === "ADMIN";
+
+  useEffect(() => {
+    if (
+      typeof window !== "undefined" &&
+      "serviceWorker" in navigator &&
+      "PushManager" in window
+    ) {
+      navigator.serviceWorker
+        .register("/sw.js")
+        .then((reg) => {
+          setIsPushSupported(true);
+          setPushPermission(Notification.permission);
+          return reg.pushManager.getSubscription();
+        })
+        .then((sub) => {
+          setIsSubscribed(!!sub);
+        })
+        .catch((err) => {
+          console.error("Error registrando SW en configuración:", err);
+        });
+    }
+  }, []);
+
+  async function togglePushSubscription() {
+    if (!isPushSupported) return;
+    setPushLoading(true);
+    setPushFeedback(null);
+
+    try {
+      const reg = await navigator.serviceWorker.ready;
+
+      if (isSubscribed) {
+        const sub = await reg.pushManager.getSubscription();
+        if (sub) {
+          await sub.unsubscribe();
+        }
+        await removePushSubscription();
+        setIsSubscribed(false);
+        setPushFeedback("Notificaciones desactivadas en este dispositivo.");
+      } else {
+        const perm = await Notification.requestPermission();
+        setPushPermission(perm);
+
+        if (perm !== "granted") {
+          setPushFeedback(
+            "Permiso denegado. Habilita las notificaciones en la configuración de tu navegador."
+          );
+          setPushLoading(false);
+          return;
+        }
+
+        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (!vapidPublicKey) {
+          setPushFeedback("Error: Falta la llave pública de notificaciones (VAPID).");
+          setPushLoading(false);
+          return;
+        }
+
+        const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
+        const sub = await reg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: convertedKey,
+        });
+
+        await savePushSubscription(JSON.stringify(sub));
+        setIsSubscribed(true);
+        setPushFeedback("¡Notificaciones activadas con éxito en este dispositivo!");
+      }
+    } catch (error) {
+      console.error("Error al configurar push:", error);
+      setPushFeedback("Error al intentar cambiar el estado de las notificaciones.");
+    } finally {
+      setPushLoading(false);
+      setTimeout(() => setPushFeedback(null), 5000);
+    }
+  }
+
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      {/* Header de Configuración */}
+      <div className="flex items-center gap-3 border-b border-border/60 pb-5">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary">
+          <Settings className="h-6 w-6" />
+        </div>
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
+            Configuración del Sistema
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
+            Cuenta de usuario, preferencias de notificaciones y seguridad de acceso.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-6">
+        {/* Datos del Usuario */}
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-2.5 pb-4 border-b border-border/60">
+            <UserIcon className="h-5 w-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">
+              Datos del Usuario
+            </h2>
+          </div>
+
+          <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+            {/* Nombre del Usuario */}
+            <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <UserIcon className="h-3.5 w-3.5" />
+                <span>Nombre del Usuario</span>
+              </div>
+              <p className="mt-1.5 text-base font-bold text-foreground">
+                {user.name}
+              </p>
+            </div>
+
+            {/* Correo del Usuario */}
+            <div className="rounded-xl border border-border/80 bg-muted/30 p-4">
+              <div className="flex items-center gap-1.5 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                <Mail className="h-3.5 w-3.5" />
+                <span>Correo Electrónico</span>
+              </div>
+              <p className="mt-1.5 text-base font-bold text-foreground break-all">
+                {user.email}
+              </p>
+            </div>
+          </div>
+
+          {/* Rol / Permisos */}
+          <div className="mt-4 flex items-center justify-between rounded-xl border border-border/60 bg-background p-3.5">
+            <div className="flex items-center gap-2.5">
+              {isAdmin ? (
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              ) : (
+                <UserIcon className="h-5 w-5 text-muted-foreground" />
+              )}
+              <div>
+                <p className="text-xs font-semibold text-foreground">
+                  Nivel de Acceso y Permisos
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  {isAdmin
+                    ? "Control total: altas, bajas, edición de stock y usuarios."
+                    : "Consulta de stock, registro de salidas y entradas de material."}
+                </p>
+              </div>
+            </div>
+            <span
+              className={`rounded-lg px-2.5 py-1 text-xs font-bold uppercase ${
+                isAdmin
+                  ? "bg-primary/10 text-primary"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {isAdmin ? "Administrador" : "Integrante"}
+            </span>
+          </div>
+        </section>
+
+        {/* Sección 3: Notificaciones (Activar/Apagar con texto explicativo) */}
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center justify-between pb-4 border-b border-border/60">
+            <div className="flex items-center gap-2.5">
+              <Bell className="h-5 w-5 text-primary" />
+              <h2 className="text-base font-bold text-foreground">
+                Notificaciones del Sistema
+              </h2>
+            </div>
+
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-bold ${
+                isSubscribed
+                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                  : "bg-muted text-muted-foreground"
+              }`}
+            >
+              {isSubscribed ? "Activadas" : "Desactivadas"}
+            </span>
+          </div>
+
+          {/* Texto explicativo sobre la función de las notificaciones */}
+          <div className="mt-4 rounded-xl border border-border/80 bg-muted/30 p-4">
+            <div className="flex items-center gap-2 text-xs font-bold text-foreground">
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span>Función de las notificaciones en esta aplicación:</span>
+            </div>
+            <p className="mt-2 text-xs sm:text-sm text-muted-foreground leading-relaxed">
+              Las notificaciones te mantienen informado al instante sobre cualquier actividad relevante en el inventario:
+              <strong className="text-foreground"> movimientos hechos por los usuarios</strong> (quién retiró o ingresó material),
+              <strong className="text-foreground"> ingresos y reposición de stock</strong>,
+              <strong className="text-foreground"> cambios en el catálogo de productos</strong> y
+              <strong className="text-foreground"> alertas de stock bajo</strong> para garantizar que nunca falten insumos clave en los eventos y actividades de la coordinación.
+            </p>
+          </div>
+
+          {/* Feedback de acción */}
+          {pushFeedback && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-primary/10 p-3 text-xs text-primary animate-fade-in">
+              <CheckCircle className="h-4 w-4 shrink-0" />
+              <span>{pushFeedback}</span>
+            </div>
+          )}
+
+          {/* Control para Activar / Apagar Notificaciones */}
+          <div className="mt-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-border/60 bg-background p-4">
+            <div>
+              <p className="text-sm font-bold text-foreground">
+                {isSubscribed
+                  ? "Las notificaciones push están activadas"
+                  : "Las notificaciones push están desactivadas"}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {isSubscribed
+                  ? "Este dispositivo recibirá avisos cuando ocurran movimientos en el inventario."
+                  : "Actívalas para enterarte en tiempo real cuando se registren salidas o ingresos."}
+              </p>
+            </div>
+
+            <button
+              onClick={togglePushSubscription}
+              disabled={pushLoading || pushPermission === "denied"}
+              className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all active:scale-95 disabled:opacity-50 shrink-0 ${
+                isSubscribed
+                  ? "border border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/20"
+                  : "bg-primary text-primary-foreground shadow-sm shadow-primary/20 hover:bg-primary-hover"
+              }`}
+            >
+              {pushLoading ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : isSubscribed ? (
+                <>
+                  <BellOff className="h-4 w-4" />
+                  <span>Desactivar Notificaciones</span>
+                </>
+              ) : (
+                <>
+                  <Bell className="h-4 w-4" />
+                  <span>Activar Notificaciones</span>
+                </>
+              )}
+            </button>
+          </div>
+        </section>
+
+        {/* Sección 4: Opción de Cambiar Contraseña */}
+        <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-2.5 pb-4 border-b border-border/60">
+            <KeyRound className="h-5 w-5 text-primary" />
+            <h2 className="text-base font-bold text-foreground">
+              Seguridad y Contraseña
+            </h2>
+          </div>
+
+          <div className="mt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border border-border/60 bg-background p-4">
+            <div>
+              <p className="text-sm font-bold text-foreground">
+                Contraseña de acceso
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                Actualiza tu clave de acceso periódicamente para proteger tu cuenta.
+              </p>
+            </div>
+
+            <button
+              onClick={() => setIsPasswordModalOpen(true)}
+              className="flex items-center justify-center gap-2 rounded-xl bg-foreground text-background px-4 py-2.5 text-xs font-bold hover:opacity-90 active:scale-95 transition-all shrink-0"
+            >
+              <KeyRound className="h-4 w-4" />
+              <span>Cambiar Contraseña</span>
+            </button>
+          </div>
+        </section>
+      </div>
+
+      {/* Modal para cambiar contraseña */}
+      <ChangePasswordModal
+        isOpen={isPasswordModalOpen}
+        onClose={() => setIsPasswordModalOpen(false)}
+        userEmail={user.email}
+      />
+    </div>
+  );
+}

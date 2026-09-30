@@ -55,7 +55,7 @@ export function CreateItemModal({
       return;
     }
     if (!moduleId) {
-      setError("Debes seleccionar un módulo");
+      setError("Debes seleccionar una categoría");
       return;
     }
 
@@ -144,7 +144,7 @@ export function CreateItemModal({
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">
-              Módulo / Categoría *
+              Categoría *
             </label>
             <select
               value={moduleId}

@@ -42,23 +42,42 @@ export async function createItem(formData: FormData): Promise<ActionResult> {
       };
     }
 
-    const newItem = await prisma.item.create({
-      data: {
-        moduleId: parsed.data.moduleId,
-        name: parsed.data.name,
-        packagingType: parsed.data.packagingType,
-        packs: parsed.data.packs,
-        unitsPerPack: parsed.data.unitsPerPack,
-        totalUnits,
-      },
-      include: {
-        module: {
-          select: { id: true, name: true },
+    const newItem = await prisma.$transaction(async (tx) => {
+      const itemCreated = await tx.item.create({
+        data: {
+          moduleId: parsed.data.moduleId,
+          name: parsed.data.name,
+          packagingType: parsed.data.packagingType,
+          packs: parsed.data.packs,
+          unitsPerPack: parsed.data.unitsPerPack,
+          totalUnits,
         },
-      },
+        include: {
+          module: {
+            select: { id: true, name: true },
+          },
+        },
+      });
+
+      // Auditoría: Registrar la creación en el historial
+      await tx.transaction.create({
+        data: {
+          itemId: itemCreated.id,
+          userId: session.user.id,
+          transactionType: "IN",
+          quantity: totalUnits,
+          motive:
+            totalUnits > 0
+              ? `Creación de artículo (Ingreso inicial de ${totalUnits} unidades)`
+              : "Creación de artículo en inventario",
+        },
+      });
+
+      return itemCreated;
     });
 
     revalidatePath("/dashboard");
+    revalidatePath("/dashboard/history");
     revalidatePath("/dashboard/modules");
     revalidatePath("/dashboard/categories");
     return {
@@ -73,7 +92,7 @@ export async function createItem(formData: FormData): Promise<ActionResult> {
     console.error("Error al crear artículo:", error);
     return {
       success: false,
-      error: error?.message || "Error al registrar el artículo en la base de datos",
+      error: "Ha ocurrido un error",
     };
   }
 }
@@ -158,7 +177,7 @@ export async function updateItem(formData: FormData): Promise<ActionResult> {
     console.error("Error al actualizar artículo:", error);
     return {
       success: false,
-      error: error?.message || "Error al actualizar el artículo en la base de datos",
+      error: "Ha ocurrido un error",
     };
   }
 }
@@ -190,11 +209,10 @@ export async function deleteItem(itemId: string): Promise<ActionResult> {
     revalidatePath("/dashboard/categories");
     return { success: true };
   } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : "Error al eliminar el artículo de la base de datos";
-    console.error("Error al eliminar artículo:", errMessage);
+    console.error("Error al eliminar artículo:", error);
     return {
       success: false,
-      error: errMessage,
+      error: "Ha ocurrido un error",
     };
   }
 }

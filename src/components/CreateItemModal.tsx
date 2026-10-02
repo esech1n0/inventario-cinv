@@ -90,7 +90,8 @@ export function CreateItemModal({
     try {
       const res = await createItem(formData);
       if (!res.success) {
-        setError(res.error || "Error al crear el artículo");
+        console.error("Detalle del error al crear artículo:", res.error);
+        setError("Ha ocurrido un error");
       } else {
         if (res.data && onSuccess) {
           onSuccess(res.data);
@@ -103,7 +104,8 @@ export function CreateItemModal({
         setUnitaryUnits(1);
       }
     } catch (err: any) {
-      setError(err?.message || "Error inesperado al conectar con el servidor");
+      console.error("Detalle del error inesperado al crear artículo:", err);
+      setError("Ha ocurrido un error");
     } finally {
       setLoading(false);
     }

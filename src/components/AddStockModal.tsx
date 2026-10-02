@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, ArrowUpRight, AlertCircle, Loader2 } from "lucide-react";
 import { createTransaction } from "@/app/actions/transactions";
+import { toast } from "@/components/Toast";
 
 interface Item {
   id: string;
@@ -22,7 +23,11 @@ interface AddStockModalProps {
   onClose: () => void;
   items: Item[];
   selectedItemId?: string;
-  onSuccessOptimistic: (itemId: string, quantity: number, motive: string) => void;
+  onSuccessOptimistic: (
+    itemId: string,
+    quantity: number,
+    motive: string
+  ) => void;
   onErrorRevert: (errorMsg: string) => void;
 }
 
@@ -35,7 +40,7 @@ export function AddStockModal({
   onErrorRevert,
 }: AddStockModalProps) {
   const [itemId, setItemId] = useState(selectedItemId || (items[0]?.id ?? ""));
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | "">(1);
   const [motive, setMotive] = useState("Compra / Reposición");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -48,31 +53,48 @@ export function AddStockModal({
     e.preventDefault();
     if (!currentItem) return;
 
-    if (quantity <= 0) {
+    const numQuantity = typeof quantity === "number" ? quantity : parseInt(String(quantity), 10);
+
+    if (isNaN(numQuantity) || numQuantity <= 0) {
       setError("La cantidad debe ser mayor a 0");
+      return;
+    }
+
+    if (!motive.trim()) {
+      setError("Por favor especifica el motivo del ingreso");
       return;
     }
 
     setError("");
     setLoading(true);
 
-    onSuccessOptimistic(currentItem.id, quantity, motive);
+    // Breve carga visual para feedback de usuario al presionar Confirmar
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
+    onSuccessOptimistic(currentItem.id, numQuantity, motive.trim());
+    toast.success(
+      `Se ingresaron +${numQuantity} unidad(es) de "${currentItem.name}".`,
+      "Ingreso Registrado"
+    );
     onClose();
 
     const formData = new FormData();
     formData.append("itemId", currentItem.id);
     formData.append("transactionType", "IN");
-    formData.append("quantity", quantity.toString());
-    formData.append("motive", motive);
+    formData.append("quantity", numQuantity.toString());
+    formData.append("motive", motive.trim());
 
     try {
       const res = await createTransaction(formData);
       if (!res.success) {
-        onErrorRevert(res.error || "Error al ingresar stock");
+        console.error("Detalle técnico del error al ingresar stock:", res.error);
+        toast.error("Ha ocurrido un error");
+        onErrorRevert("Ha ocurrido un error");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error de comunicación al registrar la entrada";
-      onErrorRevert(msg);
+      console.error("Detalle técnico de comunicación al ingresar stock:", err);
+      toast.error("Ha ocurrido un error");
+      onErrorRevert("Ha ocurrido un error");
     } finally {
       setLoading(false);
     }
@@ -105,7 +127,7 @@ export function AddStockModal({
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-xs text-destructive">
+            <div className="flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-xs font-semibold text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -125,10 +147,20 @@ export function AddStockModal({
             >
               {items.map((item) => (
                 <option key={item.id} value={item.id}>
-                  {item.name} ({item.module.name}) — Actual: {item.totalUnits} unid
+                  {item.name} ({item.module.name}) — Stock actual: {item.totalUnits} unid
                 </option>
               ))}
             </select>
+            {currentItem && (
+              <p className="text-xs text-muted-foreground">
+                Stock actual:{" "}
+                <span className="font-semibold text-foreground">
+                  {currentItem.totalUnits} unidades
+                </span>
+                {currentItem.packagingType === "PACKAGED" &&
+                  ` (${currentItem.packs} paquetes)`}
+              </p>
+            )}
           </div>
 
           <div className="space-y-1.5">
@@ -138,8 +170,12 @@ export function AddStockModal({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent"
+                onClick={() =>
+                  setQuantity((q) =>
+                    Math.max(1, (typeof q === "number" ? q : 1) - 1)
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent active:scale-95 transition-all"
               >
                 -
               </button>
@@ -147,15 +183,29 @@ export function AddStockModal({
                 type="number"
                 min="1"
                 value={quantity}
-                onChange={(e) =>
-                  setQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setQuantity("");
+                  } else {
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) setQuantity(parsed);
+                  }
+                }}
+                onBlur={() => {
+                  if (quantity === "" || quantity < 1) {
+                    setQuantity(1);
+                  }
+                }}
+                placeholder="1"
                 className="flex-1 rounded-xl border border-input bg-background py-2 text-center text-base font-bold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <button
                 type="button"
-                onClick={() => setQuantity((q) => q + 1)}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent"
+                onClick={() =>
+                  setQuantity((q) => (typeof q === "number" ? q : 1) + 1)
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent active:scale-95 transition-all"
               >
                 +
               </button>
@@ -185,17 +235,24 @@ export function AddStockModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted active:scale-[0.98]"
+              disabled={loading}
+              className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || !currentItem}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover active:scale-[0.98] disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Registrar Entrada
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Confirmando...</span>
+                </>
+              ) : (
+                "Confirmar Ingreso"
+              )}
             </button>
           </div>
         </form>

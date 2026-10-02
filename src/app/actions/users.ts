@@ -87,7 +87,7 @@ export async function createUser(formData: FormData): Promise<ActionResult<Creat
     };
   } catch (error) {
     console.error("Error al registrar usuario por admin:", error);
-    return { success: false, error: "Error al registrar el usuario en el sistema" };
+    return { success: false, error: "Ha ocurrido un error" };
   }
 }
 
@@ -144,7 +144,7 @@ export async function updateUserRole(
     return { success: true };
   } catch (error) {
     console.error("Error al actualizar rol:", error);
-    return { success: false, error: "Error al actualizar el rol del usuario" };
+    return { success: false, error: "Ha ocurrido un error" };
   }
 }
 
@@ -181,7 +181,7 @@ export async function adminChangeUserPassword(
     return { success: true };
   } catch (error) {
     console.error("Error al cambiar contraseña por admin:", error);
-    return { success: false, error: "Error al actualizar la contraseña del usuario" };
+    return { success: false, error: "Ha ocurrido un error" };
   }
 }
 
@@ -195,10 +195,15 @@ export async function deleteUser(userId: string): Promise<ActionResult> {
     return { success: false, error: "No puedes eliminarte a ti mismo" };
   }
 
-  await prisma.user.delete({
-    where: { id: userId },
-  });
+  try {
+    await prisma.user.delete({
+      where: { id: userId },
+    });
 
-  revalidatePath("/dashboard/users");
-  return { success: true };
+    revalidatePath("/dashboard/users");
+    return { success: true };
+  } catch (error) {
+    console.error("Error al eliminar usuario:", error);
+    return { success: false, error: "Ha ocurrido un error" };
+  }
 }

@@ -109,14 +109,16 @@ export function EditItemModal({
       setLoading(false);
 
       if (!res.success || !res.data) {
-        setError(res.error || "Error al actualizar el artículo");
+        console.error("Detalle del error al actualizar artículo:", res.error);
+        setError("Ha ocurrido un error");
       } else {
         onSuccess(res.data as Item);
         onClose();
       }
     } catch (err: any) {
       setLoading(false);
-      setError(err?.message || "Error de conexión al actualizar el artículo");
+      console.error("Detalle del error inesperado al actualizar artículo:", err);
+      setError("Ha ocurrido un error");
     }
   }
 

@@ -48,7 +48,7 @@ export async function createModule(formData: FormData): Promise<ActionResult> {
     console.error("Error al crear categoría:", error);
     return {
       success: false,
-      error: error?.message || "Error al registrar la categoría en la base de datos",
+      error: "Ha ocurrido un error",
     };
   }
 }
@@ -75,7 +75,7 @@ export async function deleteModule(moduleId: string): Promise<ActionResult> {
     console.error("Error al eliminar categoría:", error);
     return {
       success: false,
-      error: error?.message || "Error al eliminar la categoría en la base de datos",
+      error: "Ha ocurrido un error",
     };
   }
 }
@@ -119,7 +119,7 @@ export async function updateModule(
     console.error("Error al actualizar categoría:", error);
     return {
       success: false,
-      error: error?.message || "Error al actualizar la categoría en la base de datos",
+      error: "Ha ocurrido un error",
     };
   }
 }

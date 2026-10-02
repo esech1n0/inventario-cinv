@@ -5,6 +5,7 @@ import {
   History,
   ArrowDownRight,
   ArrowUpRight,
+  PlusCircle,
   Search,
   Calendar,
   User,
@@ -36,12 +37,21 @@ interface HistoryClientProps {
 }
 
 export function HistoryClient({ initialTransactions }: HistoryClientProps) {
-  const [filterType, setFilterType] = useState<"ALL" | "IN" | "OUT">("ALL");
+  const [filterType, setFilterType] = useState<"ALL" | "IN" | "OUT" | "CREATION">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
 
   const filtered = initialTransactions.filter((tx) => {
-    const matchesType =
-      filterType === "ALL" || tx.transactionType === filterType;
+    const isCreation = tx.motive.toLowerCase().includes("creaci");
+    
+    let matchesType = true;
+    if (filterType === "OUT") {
+      matchesType = tx.transactionType === "OUT";
+    } else if (filterType === "IN") {
+      matchesType = tx.transactionType === "IN" && !isCreation;
+    } else if (filterType === "CREATION") {
+      matchesType = isCreation;
+    }
+
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       tx.item.name.toLowerCase().includes(query) ||
@@ -49,6 +59,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
       tx.user.name.toLowerCase().includes(query) ||
       tx.motive.toLowerCase().includes(query) ||
       (tx.eventName && tx.eventName.toLowerCase().includes(query));
+
     return matchesType && matchesSearch;
   });
 
@@ -60,7 +71,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             Historial de Movimientos y Auditoría
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Trazabilidad completa de consumo, entradas y salidas de material
+            Trazabilidad completa de consumo, creaciones, ingresos y salidas de material
           </p>
         </div>
       </div>
@@ -102,11 +113,21 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
             onClick={() => setFilterType("IN")}
             className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
               filterType === "IN"
+                ? "bg-emerald-600 text-white"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Ingresos
+          </button>
+          <button
+            onClick={() => setFilterType("CREATION")}
+            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+              filterType === "CREATION"
                 ? "bg-primary text-primary-foreground"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
-            Entradas
+            Creaciones
           </button>
         </div>
       </div>
@@ -125,6 +146,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
         ) : (
           <div className="space-y-3">
             {filtered.map((tx) => {
+              const isCreation = tx.motive.toLowerCase().includes("creaci");
               const isOut = tx.transactionType === "OUT";
               const dateObj = new Date(tx.createdAt);
               const formattedDate = dateObj.toLocaleDateString("es-MX", {
@@ -145,12 +167,16 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
                   <div className="flex items-start gap-3.5">
                     <div
                       className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ${
-                        isOut
+                        isCreation
+                          ? "bg-primary/10 text-primary"
+                          : isOut
                           ? "bg-destructive/10 text-destructive"
-                          : "bg-primary/10 text-primary"
+                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                       }`}
                     >
-                      {isOut ? (
+                      {isCreation ? (
+                        <PlusCircle className="h-5 w-5" />
+                      ) : isOut ? (
                         <ArrowDownRight className="h-5 w-5" />
                       ) : (
                         <ArrowUpRight className="h-5 w-5" />
@@ -164,6 +190,17 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
                         </span>
                         <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
                           {tx.item.module.name}
+                        </span>
+                        <span
+                          className={`rounded-md px-2 py-0.5 text-[10px] font-bold ${
+                            isCreation
+                              ? "bg-primary/15 text-primary"
+                              : isOut
+                              ? "bg-destructive/15 text-destructive"
+                              : "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        >
+                          {isCreation ? "Creación" : isOut ? "Salida" : "Ingreso"}
                         </span>
                       </div>
 
@@ -194,14 +231,24 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
                     <div className="flex items-baseline gap-1">
                       <span
                         className={`text-lg font-extrabold ${
-                          isOut ? "text-destructive" : "text-primary"
+                          isCreation
+                            ? "text-primary"
+                            : isOut
+                            ? "text-destructive"
+                            : "text-emerald-600 dark:text-emerald-400"
                         }`}
                       >
-                        {isOut ? `-${tx.quantity}` : `+${tx.quantity}`}
+                        {isOut
+                          ? `-${tx.quantity}`
+                          : tx.quantity > 0
+                          ? `+${tx.quantity}`
+                          : "Nuevo"}
                       </span>
-                      <span className="text-xs text-muted-foreground">
-                        unid.
-                      </span>
+                      {tx.quantity > 0 && (
+                        <span className="text-xs text-muted-foreground">
+                          unid.
+                        </span>
+                      )}
                     </div>
 
                     <div className="text-[11px] text-muted-foreground">

@@ -109,3 +109,13 @@ if (fs.existsSync(logoCinvSrc)) {
 } else {
   console.warn("⚠️ [sync-assets] No se encontró assets/images/logo-cinv.png");
 }
+
+// 3. Error 404 image -> error.png
+const errorSrc = path.join(rootDir, "assets", "images", "error.png");
+if (fs.existsSync(errorSrc)) {
+  fs.copyFileSync(errorSrc, path.join(publicImagesDir, "error.png"));
+  fs.copyFileSync(errorSrc, path.join(publicDir, "error.png"));
+  console.log("✅ [sync-assets] Sincronizado error.png -> public/images/error.png (Error 404)");
+} else {
+  console.warn("⚠️ [sync-assets] No se encontró assets/images/error.png");
+}

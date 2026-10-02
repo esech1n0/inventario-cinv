@@ -146,11 +146,10 @@ export async function createTransaction(
 
     return { success: false, error: result.error };
   } catch (error: unknown) {
-    const errMessage = error instanceof Error ? error.message : "Error al procesar el movimiento en la base de datos";
-    console.error("Error en createTransaction:", errMessage);
+    console.error("Error en createTransaction:", error);
     return {
       success: false,
-      error: errMessage,
+      error: "Ha ocurrido un error",
     };
   }
 }

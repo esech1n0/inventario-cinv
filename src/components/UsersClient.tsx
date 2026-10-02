@@ -16,6 +16,7 @@ import {
 import { updateUserRole, deleteUser } from "@/app/actions/users";
 import { AdminChangePasswordModal } from "@/components/AdminChangePasswordModal";
 import { AddUserModal } from "@/components/AddUserModal";
+import { toast } from "@/components/Toast";
 import type { CreatedUserData } from "@/app/actions/users";
 
 interface UserItem {
@@ -82,13 +83,16 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
       setUsers((prev) =>
         prev.map((u) => (u.id === userId ? { ...u, role: newRole } : u))
       );
+      toast.success(`El rol de ${userName} ha sido cambiado a ${roleName}.`);
       setBanner({
         type: "success",
         text: `El rol de ${userName} ha sido cambiado a ${roleName}.`,
       });
       setTimeout(() => setBanner(null), 4000);
     } else {
-      setBanner({ type: "error", text: res.error || "Error al actualizar el rol" });
+      console.error("Detalle técnico al actualizar rol:", res.error);
+      setBanner({ type: "error", text: "Ha ocurrido un error" });
+      toast.error("Ha ocurrido un error");
     }
   }
 
@@ -107,13 +111,16 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
 
     if (res.success) {
       setUsers((prev) => prev.filter((u) => u.id !== userId));
+      toast.success(`Usuario ${userName} eliminado del sistema.`);
       setBanner({
         type: "success",
         text: `Usuario ${userName} eliminado del sistema.`,
       });
       setTimeout(() => setBanner(null), 4000);
     } else {
-      setBanner({ type: "error", text: res.error || "Error al eliminar usuario" });
+      console.error("Detalle técnico al eliminar usuario:", res.error);
+      setBanner({ type: "error", text: "Ha ocurrido un error" });
+      toast.error("Ha ocurrido un error");
     }
   }
 

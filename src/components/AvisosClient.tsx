@@ -5,6 +5,7 @@ import {
   Bell,
   ArrowDownRight,
   ArrowUpRight,
+  PlusCircle,
   Search,
   Calendar,
   Clock,
@@ -41,11 +42,19 @@ interface AvisosClientProps {
 
 export function AvisosClient({ initialTransactions }: AvisosClientProps) {
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterType, setFilterType] = useState<"ALL" | "OUT" | "IN">("ALL");
+  const [filterType, setFilterType] = useState<"ALL" | "OUT" | "IN" | "CREATION">("ALL");
 
   const filtered = initialTransactions.filter((tx) => {
-    const matchesType =
-      filterType === "ALL" || tx.transactionType === filterType;
+    const isCreation = tx.motive.toLowerCase().includes("creaci");
+    let matchesType = true;
+    if (filterType === "OUT") {
+      matchesType = tx.transactionType === "OUT";
+    } else if (filterType === "IN") {
+      matchesType = tx.transactionType === "IN" && !isCreation;
+    } else if (filterType === "CREATION") {
+      matchesType = isCreation;
+    }
+
     const query = searchQuery.toLowerCase();
     const matchesSearch =
       tx.item.name.toLowerCase().includes(query) ||
@@ -58,7 +67,8 @@ export function AvisosClient({ initialTransactions }: AvisosClientProps) {
   });
 
   const totalRetiros = initialTransactions.filter((t) => t.transactionType === "OUT").length;
-  const totalIngresos = initialTransactions.filter((t) => t.transactionType === "IN").length;
+  const totalCreaciones = initialTransactions.filter((t) => t.motive.toLowerCase().includes("creaci")).length;
+  const totalIngresos = initialTransactions.filter((t) => t.transactionType === "IN" && !t.motive.toLowerCase().includes("creaci")).length;
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6">
@@ -79,7 +89,7 @@ export function AvisosClient({ initialTransactions }: AvisosClientProps) {
         </div>
 
         {/* Resumen de contadores */}
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <div className="flex items-center gap-2 rounded-2xl border border-border bg-card px-3.5 py-2 shadow-sm text-xs">
             <span className="font-semibold text-foreground">Total:</span>
             <span className="font-bold text-primary">{initialTransactions.length}</span>
@@ -88,9 +98,13 @@ export function AvisosClient({ initialTransactions }: AvisosClientProps) {
             <ArrowDownRight className="h-3.5 w-3.5" />
             <span className="font-semibold">{totalRetiros} retiros</span>
           </div>
-          <div className="flex items-center gap-1.5 rounded-2xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
+          <div className="flex items-center gap-1.5 rounded-2xl border border-emerald-500/20 bg-emerald-500/5 px-3 py-2 text-xs text-emerald-600 dark:text-emerald-400">
             <ArrowUpRight className="h-3.5 w-3.5" />
             <span className="font-semibold">{totalIngresos} ingresos</span>
+          </div>
+          <div className="flex items-center gap-1.5 rounded-2xl border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-primary">
+            <PlusCircle className="h-3.5 w-3.5" />
+            <span className="font-semibold">{totalCreaciones} creaciones</span>
           </div>
         </div>
       </div>
@@ -133,11 +147,21 @@ export function AvisosClient({ initialTransactions }: AvisosClientProps) {
             onClick={() => setFilterType("IN")}
             className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
               filterType === "IN"
-                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                ? "bg-emerald-600 text-white shadow-sm"
                 : "text-muted-foreground hover:text-foreground"
             }`}
           >
             Ingresos
+          </button>
+          <button
+            onClick={() => setFilterType("CREATION")}
+            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+              filterType === "CREATION"
+                ? "bg-primary text-primary-foreground shadow-sm shadow-primary/20"
+                : "text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            Creaciones
           </button>
         </div>
       </div>
@@ -185,6 +209,8 @@ export function AvisosClient({ initialTransactions }: AvisosClientProps) {
                 .join("")
                 .toUpperCase();
 
+              const isCreation = tx.motive.toLowerCase().includes("creaci");
+
               return (
                 <div
                   key={tx.id}
@@ -194,12 +220,16 @@ export function AvisosClient({ initialTransactions }: AvisosClientProps) {
                     {/* Icono de tipo de movimiento */}
                     <div
                       className={`flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl ${
-                        isOut
+                        isCreation
+                          ? "bg-primary/10 text-primary"
+                          : isOut
                           ? "bg-destructive/10 text-destructive"
-                          : "bg-primary/10 text-primary"
+                          : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                       }`}
                     >
-                      {isOut ? (
+                      {isCreation ? (
+                        <PlusCircle className="h-6 w-6" />
+                      ) : isOut ? (
                         <ArrowDownRight className="h-6 w-6" />
                       ) : (
                         <ArrowUpRight className="h-6 w-6" />
@@ -221,12 +251,18 @@ export function AvisosClient({ initialTransactions }: AvisosClientProps) {
 
                         <span
                           className={`inline-flex items-center rounded-lg px-2 py-0.5 text-xs font-bold ${
-                            isOut
+                            isCreation
+                              ? "bg-primary/15 text-primary"
+                              : isOut
                               ? "bg-destructive/10 text-destructive"
-                              : "bg-primary/10 text-primary"
+                              : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                           }`}
                         >
-                          {isOut ? `Retiro: ${tx.quantity} unid.` : `Ingreso: +${tx.quantity} unid.`}
+                          {isCreation
+                            ? `Creación: ${tx.quantity > 0 ? `+${tx.quantity} unid.` : "Nuevo"}`
+                            : isOut
+                            ? `Retiro: ${tx.quantity} unid.`
+                            : `Ingreso: +${tx.quantity} unid.`}
                         </span>
                       </div>
 

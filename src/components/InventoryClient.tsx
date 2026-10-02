@@ -18,6 +18,9 @@ import { WithdrawModal } from "@/components/WithdrawModal";
 import { AddStockModal } from "@/components/AddStockModal";
 import { CreateItemModal } from "@/components/CreateItemModal";
 import { EditItemModal } from "@/components/EditItemModal";
+import { RegisteredItemsModal } from "@/components/RegisteredItemsModal";
+import { StoredCategoriesModal } from "@/components/StoredCategoriesModal";
+import { toast } from "@/components/Toast";
 import { deleteItem } from "@/app/actions/items";
 
 export interface Item {
@@ -70,6 +73,8 @@ export function InventoryClient({
   const [isAddStockOpen, setIsAddStockOpen] = useState(false);
   const [isCreateItemOpen, setIsCreateItemOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isRegisteredItemsOpen, setIsRegisteredItemsOpen] = useState(false);
+  const [isStoredCategoriesOpen, setIsStoredCategoriesOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Item | null>(null);
   const [activeItemId, setActiveItemId] = useState<string | undefined>(undefined);
   const [bannerMessage, setBannerMessage] = useState<{
@@ -185,10 +190,12 @@ export function InventoryClient({
   }
 
   function handleErrorRevert(errorMsg: string) {
+    console.error("Detalle técnico del error en inventario:", errorMsg);
     setBannerMessage({
       type: "error",
-      text: errorMsg,
+      text: "Ha ocurrido un error",
     });
+    toast.error("Ha ocurrido un error");
     setTimeout(() => setBannerMessage(null), 7000);
   }
 
@@ -212,16 +219,18 @@ export function InventoryClient({
       const res = await deleteItem(itemId);
       if (!res.success) {
         setItems(previousItems);
-        handleErrorRevert(res.error || "No se pudo eliminar el artículo");
+        handleErrorRevert(res.error || "Error al eliminar");
       } else {
+        toast.success(`Artículo "${itemName}" eliminado.`);
         setBannerMessage({
           type: "success",
           text: `Artículo "${itemName}" eliminado.`,
         });
         setTimeout(() => setBannerMessage(null), 4000);
       }
-    } catch {
+    } catch (err: unknown) {
       setItems(previousItems);
+      console.error("Detalle técnico al eliminar artículo:", err);
       handleErrorRevert("Error de conexión al eliminar el artículo");
     }
   }
@@ -291,13 +300,18 @@ export function InventoryClient({
 
       {/* Resumen Métricas */}
       <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setIsRegisteredItemsOpen(true)}
+          title="Ver todos los artículos registrados"
+          className="group cursor-pointer rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:border-primary/50 hover:bg-muted/30 hover:shadow-md active:scale-[0.98]"
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
               <Box className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-primary">
                 Artículos Registrados
               </p>
               <p className="text-xl font-bold text-foreground">
@@ -305,7 +319,7 @@ export function InventoryClient({
               </p>
             </div>
           </div>
-        </div>
+        </button>
 
         <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
           <div className="flex items-center gap-3">
@@ -323,13 +337,18 @@ export function InventoryClient({
           </div>
         </div>
 
-        <div className="col-span-2 sm:col-span-1 rounded-2xl border border-border bg-card p-4 shadow-sm">
+        <button
+          type="button"
+          onClick={() => setIsStoredCategoriesOpen(true)}
+          title="Ver todas las categorías almacenadas"
+          className="col-span-2 sm:col-span-1 group cursor-pointer rounded-2xl border border-border bg-card p-4 text-left shadow-sm transition-all hover:border-accent/50 hover:bg-muted/30 hover:shadow-md active:scale-[0.98]"
+        >
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-accent-foreground transition-transform group-hover:scale-110">
               <Layers className="h-5 w-5" />
             </div>
             <div>
-              <p className="text-xs font-medium text-muted-foreground">
+              <p className="text-xs font-medium text-muted-foreground transition-colors group-hover:text-accent-foreground">
                 Categorías Activas
               </p>
               <p className="text-xl font-bold text-foreground">
@@ -337,7 +356,7 @@ export function InventoryClient({
               </p>
             </div>
           </div>
-        </div>
+        </button>
       </div>
 
       {/* Barra de Búsqueda y Pestañas */}
@@ -558,6 +577,32 @@ export function InventoryClient({
             text: `Artículo "${updatedItem.name}" actualizado correctamente (sin registro en historial).`,
           });
           setTimeout(() => setBannerMessage(null), 5000);
+        }}
+      />
+
+      {/* Modal para ver Artículos Registrados */}
+      <RegisteredItemsModal
+        isOpen={isRegisteredItemsOpen}
+        onClose={() => setIsRegisteredItemsOpen(false)}
+        items={optimisticItems}
+        onWithdraw={(itemId) => {
+          setActiveItemId(itemId);
+          setIsWithdrawOpen(true);
+        }}
+        onAddStock={(itemId) => {
+          setActiveItemId(itemId);
+          setIsAddStockOpen(true);
+        }}
+      />
+
+      {/* Modal para ver Categorías Almacenadas */}
+      <StoredCategoriesModal
+        isOpen={isStoredCategoriesOpen}
+        onClose={() => setIsStoredCategoriesOpen(false)}
+        modules={modules}
+        items={optimisticItems}
+        onSelectCategory={(modId) => {
+          setSelectedModuleId(modId);
         }}
       />
     </div>

@@ -75,10 +75,12 @@ export function AdminChangePasswordModal({
           handleClose();
         }, 1800);
       } else {
-        setError(res.error || "No se pudo actualizar la contraseña");
+        console.error("Detalle técnico al cambiar contraseña:", res.error);
+        setError("Ha ocurrido un error");
       }
     } catch (err: any) {
-      setError(err?.message || "Error al comunicarse con el servidor");
+      console.error("Detalle técnico al conectar con el servidor:", err);
+      setError("Ha ocurrido un error");
     } finally {
       setLoading(false);
     }

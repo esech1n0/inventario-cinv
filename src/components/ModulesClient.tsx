@@ -14,6 +14,8 @@ import {
   X,
 } from "lucide-react";
 import { createModule, deleteModule, updateModule } from "@/app/actions/modules";
+import { CategoryItemsModal, type CategoryItem } from "@/components/CategoryItemsModal";
+import { toast } from "@/components/Toast";
 
 interface ModuleWithCount {
   id: string;
@@ -22,6 +24,7 @@ interface ModuleWithCount {
     items: number;
   };
   totalUnits: number;
+  items?: CategoryItem[];
 }
 
 interface ModulesClientProps {
@@ -36,6 +39,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [banner, setBanner] = useState<{ type: "success" | "error"; text: string } | null>(null);
+  const [activeCategoryModal, setActiveCategoryModal] = useState<ModuleWithCount | null>(null);
 
   // Edit module state
   const [isEditOpen, setIsEditOpen] = useState(false);
@@ -60,10 +64,13 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
     setLoading(false);
 
     if (!res.success) {
-      setError(res.error || "Error al crear la categoría");
+      console.error("Detalle técnico al crear categoría:", res.error);
+      setError("Ha ocurrido un error");
+      toast.error("Ha ocurrido un error");
     } else {
       setIsModalOpen(false);
       setNewModuleName("");
+      toast.success(`Categoría "${newModuleName.trim()}" creada correctamente.`);
       setBanner({
         type: "success",
         text: `Categoría "${newModuleName.trim()}" creada correctamente.`,
@@ -92,7 +99,9 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
     setEditLoading(false);
 
     if (!res.success) {
-      setEditError(res.error || "Error al renombrar la categoría");
+      console.error("Detalle técnico al renombrar categoría:", res.error);
+      setEditError("Ha ocurrido un error");
+      toast.error("Ha ocurrido un error");
     } else {
       setModules((prev) =>
         prev.map((m) => (m.id === editingModuleId ? { ...m, name: trimmed } : m))
@@ -100,6 +109,7 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
       setIsEditOpen(false);
       setEditingModuleId(null);
       setEditingModuleName("");
+      toast.success(`Categoría actualizada a "${trimmed}".`);
       setBanner({
         type: "success",
         text: `Categoría actualizada a "${trimmed}".`,
@@ -125,12 +135,15 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
 
     const res = await deleteModule(moduleId);
     if (!res.success) {
+      console.error("Detalle técnico al eliminar categoría:", res.error);
       setBanner({
         type: "error",
-        text: res.error || "No se pudo eliminar la categoría",
+        text: "Ha ocurrido un error",
       });
+      toast.error("Ha ocurrido un error");
       window.location.reload();
     } else {
+      toast.success(`Categoría "${moduleName}" eliminada con éxito.`);
       setBanner({
         type: "success",
         text: `Categoría "${moduleName}" eliminada con éxito.`,
@@ -184,26 +197,37 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
         {modules.map((mod) => (
           <div
             key={mod.id}
-            className="flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/40 hover:shadow-md"
+            role="button"
+            tabIndex={0}
+            onClick={() => setActiveCategoryModal(mod)}
+            onKeyDown={(e) => e.key === "Enter" && setActiveCategoryModal(mod)}
+            title={`Presiona para ver los artículos en ${mod.name}`}
+            className="group flex flex-col justify-between rounded-2xl border border-border bg-card p-5 shadow-sm transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-md cursor-pointer active:scale-[0.99]"
           >
             <div>
               <div className="flex items-start justify-between gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary transition-transform group-hover:scale-110">
                   <Layers className="h-5 w-5" />
                 </div>
 
                 {/* Acciones de administración */}
                 {isAdmin ? (
-                  <div className="flex items-center gap-1">
+                  <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
                     <button
-                      onClick={() => handleOpenEdit(mod)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenEdit(mod);
+                      }}
                       title="Editar nombre de la categoría"
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     >
                       <Pencil className="h-3.5 w-3.5" />
                     </button>
                     <button
-                      onClick={() => handleDeleteModule(mod.id, mod.name, mod._count.items)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteModule(mod.id, mod.name, mod._count.items);
+                      }}
                       title="Eliminar categoría (Solo Admin)"
                       className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors"
                     >
@@ -217,7 +241,9 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                 )}
               </div>
 
-              <h3 className="mt-4 text-lg font-bold text-foreground">{mod.name}</h3>
+              <h3 className="mt-4 text-lg font-bold text-foreground transition-colors group-hover:text-primary">
+                {mod.name}
+              </h3>
 
               <div className="mt-3 grid grid-cols-2 gap-2 border-t border-border/60 pt-3 text-xs">
                 <div className="flex items-center gap-1.5 text-muted-foreground">
@@ -352,6 +378,16 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
             </form>
           </div>
         </div>
+      )}
+
+      {/* Modal para ver artículos de la categoría seleccionada */}
+      {activeCategoryModal && (
+        <CategoryItemsModal
+          isOpen={!!activeCategoryModal}
+          onClose={() => setActiveCategoryModal(null)}
+          categoryName={activeCategoryModal.name}
+          items={activeCategoryModal.items || []}
+        />
       )}
     </div>
   );

@@ -94,11 +94,12 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
           handleClose();
         }, 1600);
       } else {
-        setError(res.error || "No se pudo registrar el usuario");
+        console.error("Detalle del error al crear usuario:", res.error);
+        setError("Ha ocurrido un error");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error al conectar con el servidor";
-      setError(msg);
+      console.error("Error al conectar con el servidor:", err);
+      setError("Ha ocurrido un error");
     } finally {
       setLoading(false);
     }
@@ -285,7 +286,7 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
                     </span>
                   </div>
                   <span className="text-[11px] text-muted-foreground mt-1">
-                    Acceso al inventario, consumo de insumos y creación de módulos.
+                    Acceso al inventario, consumo de insumos y creación de categorías.
                   </span>
                 </button>
 

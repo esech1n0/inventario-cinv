@@ -10,7 +10,7 @@ export default async function CategoriesPage() {
     redirect("/login");
   }
 
-  let modulesWithUnits: { id: string; name: string; _count: { items: number }; totalUnits: number }[] = [];
+  let modulesWithUnits: any[] = [];
   let dbError: string | null = null;
 
   try {
@@ -18,7 +18,16 @@ export default async function CategoriesPage() {
       orderBy: { name: "asc" },
       include: {
         items: {
-          select: { totalUnits: true },
+          orderBy: { name: "asc" },
+          select: {
+            id: true,
+            name: true,
+            packagingType: true,
+            packs: true,
+            unitsPerPack: true,
+            totalUnits: true,
+            createdAt: true,
+          },
         },
         _count: {
           select: { items: true },
@@ -31,6 +40,10 @@ export default async function CategoriesPage() {
       name: mod.name,
       _count: mod._count,
       totalUnits: mod.items.reduce((acc, curr) => acc + curr.totalUnits, 0),
+      items: mod.items.map((it) => ({
+        ...it,
+        createdAt: it.createdAt instanceof Date ? it.createdAt.toISOString() : it.createdAt,
+      })),
     }));
   } catch (error: any) {
     console.error("Error al cargar categorías en CategoriesPage:", error);

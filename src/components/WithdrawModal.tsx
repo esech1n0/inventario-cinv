@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, ArrowDownRight, Calendar, AlertCircle, Loader2 } from "lucide-react";
 import { createTransaction } from "@/app/actions/transactions";
+import { toast } from "@/components/Toast";
 
 interface Item {
   id: string;
@@ -40,7 +41,7 @@ export function WithdrawModal({
   onErrorRevert,
 }: WithdrawModalProps) {
   const [itemId, setItemId] = useState(selectedItemId || (items[0]?.id ?? ""));
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | "">(1);
   const [motive, setMotive] = useState("Para mi");
   const [eventName, setEventName] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,12 +56,14 @@ export function WithdrawModal({
     e.preventDefault();
     if (!currentItem) return;
 
-    if (quantity <= 0) {
+    const numQuantity = typeof quantity === "number" ? quantity : parseInt(String(quantity), 10);
+
+    if (isNaN(numQuantity) || numQuantity <= 0) {
       setError("La cantidad debe ser mayor a 0");
       return;
     }
 
-    if (quantity > currentItem.totalUnits) {
+    if (numQuantity > currentItem.totalUnits) {
       setError(
         `Stock insuficiente. Solo hay ${currentItem.totalUnits} unidades disponibles.`
       );
@@ -75,18 +78,25 @@ export function WithdrawModal({
     setError("");
     setLoading(true);
 
+    // Breve carga visual para feedback de usuario al presionar Confirmar
+    await new Promise((resolve) => setTimeout(resolve, 350));
+
     onSuccessOptimistic(
       currentItem.id,
-      quantity,
+      numQuantity,
       motive,
       isEventMotive ? eventName : undefined
+    );
+    toast.success(
+      `Se retiraron ${numQuantity} unidad(es) de "${currentItem.name}" (${motive}).`,
+      "Retiro Confirmado"
     );
     onClose();
 
     const formData = new FormData();
     formData.append("itemId", currentItem.id);
     formData.append("transactionType", "OUT");
-    formData.append("quantity", quantity.toString());
+    formData.append("quantity", numQuantity.toString());
     formData.append("motive", motive);
     if (isEventMotive && eventName) {
       formData.append("eventName", eventName);
@@ -95,11 +105,14 @@ export function WithdrawModal({
     try {
       const res = await createTransaction(formData);
       if (!res.success) {
-        onErrorRevert(res.error || "Error al retirar stock");
+        console.error("Detalle técnico del error al retirar:", res.error);
+        toast.error("Ha ocurrido un error");
+        onErrorRevert("Ha ocurrido un error");
       }
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Error de comunicación al registrar la salida";
-      onErrorRevert(msg);
+      console.error("Detalle técnico de comunicación al retirar:", err);
+      toast.error("Ha ocurrido un error");
+      onErrorRevert("Ha ocurrido un error");
     } finally {
       setLoading(false);
     }
@@ -132,7 +145,7 @@ export function WithdrawModal({
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-4">
           {error && (
-            <div className="flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-xs text-destructive">
+            <div className="flex items-center gap-2 rounded-xl bg-destructive/10 p-3 text-xs font-semibold text-destructive">
               <AlertCircle className="h-4 w-4 shrink-0" />
               <span>{error}</span>
             </div>
@@ -175,8 +188,12 @@ export function WithdrawModal({
             <div className="flex items-center gap-3">
               <button
                 type="button"
-                onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent"
+                onClick={() =>
+                  setQuantity((q) =>
+                    Math.max(1, (typeof q === "number" ? q : 1) - 1)
+                  )
+                }
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent active:scale-95 transition-all"
               >
                 -
               </button>
@@ -185,19 +202,34 @@ export function WithdrawModal({
                 min="1"
                 max={currentItem?.totalUnits || 1}
                 value={quantity}
-                onChange={(e) =>
-                  setQuantity(Math.max(1, parseInt(e.target.value, 10) || 1))
-                }
+                onChange={(e) => {
+                  const val = e.target.value;
+                  if (val === "") {
+                    setQuantity("");
+                  } else {
+                    const parsed = parseInt(val, 10);
+                    if (!isNaN(parsed)) setQuantity(parsed);
+                  }
+                }}
+                onBlur={() => {
+                  if (quantity === "" || quantity < 1) {
+                    setQuantity(1);
+                  }
+                }}
+                placeholder="1"
                 className="flex-1 rounded-xl border border-input bg-background py-2 text-center text-base font-bold text-foreground outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
               />
               <button
                 type="button"
                 onClick={() =>
                   setQuantity((q) =>
-                    Math.min(currentItem?.totalUnits || 1, q + 1)
+                    Math.min(
+                      currentItem?.totalUnits || 1,
+                      (typeof q === "number" ? q : 1) + 1
+                    )
                   )
                 }
-                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent"
+                className="flex h-10 w-10 items-center justify-center rounded-xl border border-border bg-muted font-bold text-foreground hover:bg-accent active:scale-95 transition-all"
               >
                 +
               </button>
@@ -206,17 +238,24 @@ export function WithdrawModal({
 
           <div className="space-y-1.5">
             <label className="text-xs font-semibold text-foreground">
-              Motivo del retiro *
+              Motivo de retiro *
             </label>
-            <select
-              value={motive}
-              onChange={(e) => setMotive(e.target.value)}
-              className="w-full rounded-xl border border-input bg-background px-3.5 py-2.5 text-sm outline-none transition-all focus:border-primary focus:ring-2 focus:ring-primary/20"
-            >
-              <option value="Para mi">Para mi</option>
-              <option value="Para evento">Para evento</option>
-              <option value="Para la coordinación">Para la coordinación</option>
-            </select>
+            <div className="grid grid-cols-3 gap-2">
+              {["Para mi", "Para evento", "Para la coordinación"].map((m) => (
+                <button
+                  type="button"
+                  key={m}
+                  onClick={() => setMotive(m)}
+                  className={`rounded-xl border py-2 text-xs font-medium transition-all ${
+                    motive === m
+                      ? "border-primary bg-primary/10 font-bold text-primary"
+                      : "border-border bg-background text-muted-foreground hover:bg-muted"
+                  }`}
+                >
+                  {m}
+                </button>
+              ))}
+            </div>
           </div>
 
           {isEventMotive && (
@@ -243,17 +282,24 @@ export function WithdrawModal({
             <button
               type="button"
               onClick={onClose}
-              className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted active:scale-[0.98]"
+              disabled={loading}
+              className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted active:scale-[0.98] transition-all disabled:opacity-50"
             >
               Cancelar
             </button>
             <button
               type="submit"
               disabled={loading || !currentItem || currentItem.totalUnits <= 0}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive py-2.5 text-sm font-semibold text-destructive-foreground hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
+              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-destructive py-2.5 text-sm font-semibold text-destructive-foreground hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50"
             >
-              {loading && <Loader2 className="h-4 w-4 animate-spin" />}
-              Confirmar Retiro
+              {loading ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <span>Confirmando...</span>
+                </>
+              ) : (
+                "Confirmar Retiro"
+              )}
             </button>
           </div>
         </form>

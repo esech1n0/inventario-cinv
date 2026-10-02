@@ -19,6 +19,7 @@ import {
   removePushSubscription,
 } from "@/app/actions/notifications";
 import { ChangePasswordModal } from "@/components/ChangePasswordModal";
+import { toast } from "@/components/Toast";
 
 interface ConfiguracionClientProps {
   user: {
@@ -49,6 +50,7 @@ export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
   const [pushLoading, setPushLoading] = useState(false);
   const [pushPermission, setPushPermission] = useState<NotificationPermission>("default");
   const [pushFeedback, setPushFeedback] = useState<string | null>(null);
+  const [pushError, setPushError] = useState<string | null>(null);
 
   const isAdmin = user.role === "ADMIN";
 
@@ -78,6 +80,7 @@ export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
     if (!isPushSupported) return;
     setPushLoading(true);
     setPushFeedback(null);
+    setPushError(null);
 
     try {
       const reg = await navigator.serviceWorker.ready;
@@ -90,41 +93,77 @@ export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
         await removePushSubscription();
         setIsSubscribed(false);
         setPushFeedback("Notificaciones desactivadas en este dispositivo.");
+        toast.info("Notificaciones desactivadas.");
       } else {
         const perm = await Notification.requestPermission();
         setPushPermission(perm);
 
         if (perm !== "granted") {
-          setPushFeedback(
-            "Permiso denegado. Habilita las notificaciones en la configuración de tu navegador."
-          );
+          console.warn("Permiso de notificaciones no concedido:", perm);
+          setPushError("Ha ocurrido un error");
+          toast.error("Ha ocurrido un error");
           setPushLoading(false);
           return;
         }
 
-        const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-        if (!vapidPublicKey) {
-          setPushFeedback("Error: Falta la llave pública de notificaciones (VAPID).");
-          setPushLoading(false);
-          return;
+        const vapidPublicKey =
+          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+          "BLl_h_cqUORAwh12lLIUOn-lIXpLGhUK2XCJX9winI0Mifq5yYuSti99Mb0P75Jh_OyJ_y-9z_ahukDbCRJxGcI";
+
+        // Limpiar suscripciones previas o desfasadas para evitar AbortError / push service error
+        const existingSub = await reg.pushManager.getSubscription();
+        if (existingSub) {
+          try {
+            await existingSub.unsubscribe();
+          } catch (unsubErr) {
+            console.warn("Aviso al limpiar suscripción push previa:", unsubErr);
+          }
         }
 
         const convertedKey = urlBase64ToUint8Array(vapidPublicKey);
-        const sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedKey,
-        });
+        let sub: PushSubscription;
+        try {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: convertedKey,
+          });
+        } catch (subErr: any) {
+          // Intentar con buffer directo en caso de incompatibilidad de ArrayBufferView en Chromium
+          if (subErr?.name === "AbortError" && convertedKey.buffer) {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: convertedKey.buffer,
+            });
+          } else {
+            throw subErr;
+          }
+        }
 
         await savePushSubscription(JSON.stringify(sub));
         setIsSubscribed(true);
         setPushFeedback("¡Notificaciones activadas con éxito en este dispositivo!");
+        toast.success("Notificaciones push activadas correctamente.");
       }
     } catch (error) {
+      // Detalle técnico exacto registrado exclusivamente en la consola / logs
       console.error("Error al configurar push:", error);
-      setPushFeedback("Error al intentar cambiar el estado de las notificaciones.");
+      if (error instanceof Error && error.name === "AbortError") {
+        console.warn(
+          "[CINV - Aviso Brave/Chromium]: El error 'Registration failed - push service error' ocurre porque el navegador no puede conectar con los servidores FCM de Google.\n" +
+          "Solución en Brave:\n" +
+          "1. Es INDISPENSABLE reiniciar Brave completamente (cerrar todas las pestañas/ventanas de Brave y volverlo a abrir) para que el servicio FCM empiece a correr tras activarlo en brave://settings/privacy.\n" +
+          "2. En la barra de direcciones de localhost:3000, haz clic en el ícono del león (Escudos de Brave / Shields) y desactívalo para este sitio, ya que por defecto bloquea la conexión push a Google."
+        );
+      }
+      // Mensaje genérico en rojo para la interfaz del usuario
+      setPushError("Ha ocurrido un error");
+      toast.error("Ha ocurrido un error");
     } finally {
       setPushLoading(false);
-      setTimeout(() => setPushFeedback(null), 5000);
+      setTimeout(() => {
+        setPushFeedback(null);
+        setPushError(null);
+      }, 5000);
     }
   }
 
@@ -246,9 +285,17 @@ export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
             </p>
           </div>
 
-          {/* Feedback de acción */}
-          {pushFeedback && (
-            <div className="mt-4 flex items-center gap-2 rounded-xl bg-primary/10 p-3 text-xs text-primary animate-fade-in">
+          {/* Feedback de error en color rojo genérico */}
+          {pushError && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-destructive/10 border border-destructive/20 p-3 text-xs font-semibold text-destructive animate-fade-in">
+              <AlertCircle className="h-4 w-4 shrink-0" />
+              <span>{pushError}</span>
+            </div>
+          )}
+
+          {/* Feedback de éxito */}
+          {pushFeedback && !pushError && (
+            <div className="mt-4 flex items-center gap-2 rounded-xl bg-emerald-500/10 border border-emerald-500/20 p-3 text-xs font-semibold text-emerald-600 dark:text-emerald-400 animate-fade-in">
               <CheckCircle className="h-4 w-4 shrink-0" />
               <span>{pushFeedback}</span>
             </div>

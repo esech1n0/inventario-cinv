@@ -16,7 +16,11 @@ import {
   Bell,
   LogOut,
   User as UserIcon,
+  Sun,
+  Moon,
+  Laptop,
 } from "lucide-react";
+import { useTheme } from "@/components/ThemeProvider";
 
 interface NavigationProps {
   user: {
@@ -28,6 +32,7 @@ interface NavigationProps {
 
 export function Navigation({ user }: NavigationProps) {
   const pathname = usePathname();
+  const { theme, setTheme } = useTheme();
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const isAdmin = user.role === "ADMIN";
@@ -224,6 +229,59 @@ export function Navigation({ user }: NavigationProps) {
 
         {/* Parte inferior del Menú Lateral */}
         <div className="border-t border-border/60 pt-4 space-y-3">
+          {/* Selector de Tema: Claro, Oscuro (predeterminado), Sistema */}
+          <div className="space-y-1.5">
+            <span className="text-[11px] font-semibold text-muted-foreground uppercase tracking-wider px-1">
+              Tema de la aplicación
+            </span>
+            <div className="grid grid-cols-3 gap-1 rounded-xl border border-border/60 bg-muted/40 p-1">
+              <button
+                type="button"
+                onClick={() => setTheme("light")}
+                title="Activar tema claro"
+                aria-label="Tema claro"
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                  theme === "light"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                <Sun className="h-3.5 w-3.5 shrink-0 text-amber-500" />
+                <span>Claro</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTheme("dark")}
+                title="Activar tema oscuro (predeterminado)"
+                aria-label="Tema oscuro"
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                  theme === "dark"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                <Moon className="h-3.5 w-3.5 shrink-0 text-blue-400" />
+                <span>Oscuro</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setTheme("system")}
+                title="Sincronizar con el tema del sistema"
+                aria-label="Tema del sistema"
+                className={`flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition-all ${
+                  theme === "system"
+                    ? "bg-card text-foreground shadow-xs"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/60"
+                }`}
+              >
+                <Laptop className="h-3.5 w-3.5 shrink-0" />
+                <span>Sistema</span>
+              </button>
+            </div>
+          </div>
+
           {/* Tarjeta con datos de la sesión del usuario */}
           <div className="flex items-center gap-3 rounded-xl border border-border/60 bg-muted/40 p-3">
             <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-xs font-bold text-primary">

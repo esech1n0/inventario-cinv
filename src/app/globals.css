@@ -1,6 +1,40 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =========================================================
+   TEMA PREDETERMINADO: OSCURO (DEFAULT)
+   ========================================================= */
 :root {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --primary-hover: #60a5fa;
+  --secondary: #1e293b;
+  --secondary-foreground: #cbd5e1;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --radius: 0.75rem;
+  --hover-color: #1e293b;
+}
+
+/* =========================================================
+   TEMA CLARO (ACTIVADO EXPLÍCITAMENTE O VÍA SISTEMA)
+   ========================================================= */
+html.light,
+[data-theme="light"] {
   --background: #f8fafc;
   --foreground: #0f172a;
   --card: #ffffff;
@@ -21,32 +55,35 @@
   --ring: #2563eb;
   --success: #22c55e;
   --warning: #f59e0b;
-  --radius: 0.75rem;
+  --hover-color: #f1f5f9;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #020617;
-    --foreground: #f8fafc;
-    --card: #0f172a;
-    --card-foreground: #f8fafc;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --primary-hover: #60a5fa;
-    --secondary: #1e293b;
-    --secondary-foreground: #cbd5e1;
-    --muted: #1e293b;
-    --muted-foreground: #94a3b8;
-    --accent: #1e293b;
-    --accent-foreground: #f8fafc;
-    --destructive: #dc2626;
-    --destructive-foreground: #ffffff;
-    --border: #1e293b;
-    --input: #1e293b;
-    --ring: #3b82f6;
-    --success: #22c55e;
-    --warning: #f59e0b;
-  }
+/* =========================================================
+   TEMA OSCURO EXPLÍCITO
+   ========================================================= */
+html.dark,
+[data-theme="dark"] {
+  --background: #020617;
+  --foreground: #f8fafc;
+  --card: #0f172a;
+  --card-foreground: #f8fafc;
+  --primary: #3b82f6;
+  --primary-foreground: #ffffff;
+  --primary-hover: #60a5fa;
+  --secondary: #1e293b;
+  --secondary-foreground: #cbd5e1;
+  --muted: #1e293b;
+  --muted-foreground: #94a3b8;
+  --accent: #1e293b;
+  --accent-foreground: #f8fafc;
+  --destructive: #dc2626;
+  --destructive-foreground: #ffffff;
+  --border: #1e293b;
+  --input: #1e293b;
+  --ring: #3b82f6;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --hover-color: #1e293b;
 }
 
 @theme inline {

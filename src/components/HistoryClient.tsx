@@ -9,36 +9,21 @@ import {
   Search,
   Calendar,
   User,
+  ChevronRight,
 } from "lucide-react";
-
-interface TransactionItem {
-  id: string;
-  transactionType: "IN" | "OUT";
-  quantity: number;
-  motive: string;
-  eventName: string | null;
-  createdAt: Date | string;
-  item: {
-    name: string;
-    packagingType: "UNITARY" | "PACKAGED";
-    module: {
-      name: string;
-    };
-  };
-  user: {
-    name: string;
-    email: string;
-    role: string;
-  };
-}
+import {
+  TransactionDetailModal,
+  TransactionDetail,
+} from "@/components/TransactionDetailModal";
 
 interface HistoryClientProps {
-  initialTransactions: TransactionItem[];
+  initialTransactions: TransactionDetail[];
 }
 
 export function HistoryClient({ initialTransactions }: HistoryClientProps) {
   const [filterType, setFilterType] = useState<"ALL" | "IN" | "OUT" | "CREATION">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
+  const [selectedTransaction, setSelectedTransaction] = useState<TransactionDetail | null>(null);
 
   const filtered = initialTransactions.filter((tx) => {
     const isCreation = tx.motive.toLowerCase().includes("creaci");
@@ -162,7 +147,16 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
               return (
                 <div
                   key={tx.id}
-                  className="flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/30 sm:flex-row sm:items-center sm:justify-between"
+                  role="button"
+                  tabIndex={0}
+                  onClick={() => setSelectedTransaction(tx)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setSelectedTransaction(tx);
+                    }
+                  }}
+                  className="group cursor-pointer flex flex-col gap-3 rounded-2xl border border-border bg-card p-4 shadow-sm transition-all hover:border-primary/40 hover:shadow-md hover:scale-[1.003] active:scale-[0.99] sm:flex-row sm:items-center sm:justify-between"
                 >
                   <div className="flex items-start gap-3.5">
                     <div
@@ -185,7 +179,7 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
 
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="font-bold text-foreground">
+                        <span className="font-bold text-foreground group-hover:text-primary transition-colors">
                           {tx.item.name}
                         </span>
                         <span className="rounded-md bg-secondary px-2 py-0.5 text-[10px] font-semibold text-secondary-foreground">
@@ -227,32 +221,38 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between border-t border-border/40 pt-2 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
-                    <div className="flex items-baseline gap-1">
-                      <span
-                        className={`text-lg font-extrabold ${
-                          isCreation
-                            ? "text-primary"
-                            : isOut
-                            ? "text-destructive"
-                            : "text-emerald-600 dark:text-emerald-400"
-                        }`}
-                      >
-                        {isOut
-                          ? `-${tx.quantity}`
-                          : tx.quantity > 0
-                          ? `+${tx.quantity}`
-                          : "Nuevo"}
-                      </span>
-                      {tx.quantity > 0 && (
-                        <span className="text-xs text-muted-foreground">
-                          unid.
+                  <div className="flex items-center justify-between border-t border-border/40 pt-2 sm:flex-row sm:items-center sm:gap-4 sm:border-0 sm:pt-0">
+                    <div className="flex flex-col sm:items-end">
+                      <div className="flex items-baseline gap-1">
+                        <span
+                          className={`text-lg font-extrabold ${
+                            isCreation
+                              ? "text-primary"
+                              : isOut
+                              ? "text-destructive"
+                              : "text-emerald-600 dark:text-emerald-400"
+                          }`}
+                        >
+                          {isOut
+                            ? `-${tx.quantity}`
+                            : tx.quantity > 0
+                            ? `+${tx.quantity}`
+                            : "Nuevo"}
                         </span>
-                      )}
+                        {tx.quantity > 0 && (
+                          <span className="text-xs text-muted-foreground">
+                            unid.
+                          </span>
+                        )}
+                      </div>
+
+                      <div className="text-[11px] text-muted-foreground">
+                        {formattedDate} {formattedTime}
+                      </div>
                     </div>
 
-                    <div className="text-[11px] text-muted-foreground">
-                      {formattedDate} {formattedTime}
+                    <div className="hidden sm:flex h-8 w-8 items-center justify-center rounded-xl bg-muted/50 text-muted-foreground group-hover:bg-primary/10 group-hover:text-primary transition-all">
+                      <ChevronRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                     </div>
                   </div>
                 </div>
@@ -261,6 +261,13 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
           </div>
         )}
       </div>
+
+      {/* Modal con especificaciones detalladas del movimiento */}
+      <TransactionDetailModal
+        isOpen={!!selectedTransaction}
+        onClose={() => setSelectedTransaction(null)}
+        transaction={selectedTransaction}
+      />
     </div>
   );
 }

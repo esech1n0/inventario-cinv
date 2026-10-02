@@ -1,6 +1,6 @@
 // Service Worker para Inventario CINV - PWA & Web Push
 
-const CACHE_NAME = "cinv-inventario-v1";
+const CACHE_NAME = "cinv-inventario-v2";
 const STATIC_ASSETS = [
   "/",
   "/dashboard",
@@ -10,13 +10,23 @@ const STATIC_ASSETS = [
   "/icon-512.png",
 ];
 
+// Permitir que la UI fuerce la activación inmediata de la nueva versión
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       return cache.addAll(STATIC_ASSETS).catch(() => {});
     })
   );
-  self.skipWaiting();
+  // Si no hay ningún Service Worker activo previo, activar inmediatamente
+  if (!self.registration.active) {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener("activate", (event) => {

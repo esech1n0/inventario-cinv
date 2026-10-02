@@ -38,9 +38,9 @@ export function EditItemModal({
   const [name, setName] = useState("");
   const [moduleId, setModuleId] = useState("");
   const [packagingType, setPackagingType] = useState<"UNITARY" | "PACKAGED">("UNITARY");
-  const [packs, setPacks] = useState(0);
-  const [unitsPerPack, setUnitsPerPack] = useState(1);
-  const [totalUnits, setTotalUnits] = useState(0);
+  const [packs, setPacks] = useState<number | "">(0);
+  const [unitsPerPack, setUnitsPerPack] = useState<number | "">(1);
+  const [totalUnits, setTotalUnits] = useState<number | "">(0);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -50,32 +50,53 @@ export function EditItemModal({
       setName(item.name);
       setModuleId(item.moduleId);
       setPackagingType(item.packagingType);
-      setPacks(item.packs || 0);
-      setUnitsPerPack(item.unitsPerPack || 1);
-      setTotalUnits(item.totalUnits || 0);
+      setPacks(item.packs ?? 0);
+      setUnitsPerPack(item.unitsPerPack ?? 1);
+      setTotalUnits(item.totalUnits ?? 0);
       setError("");
     }
   }, [item]);
 
   if (!isOpen || !item) return null;
 
-  function handlePacksChange(newPacks: number) {
-    const p = Math.max(0, newPacks);
+  function handlePacksChange(val: string | number) {
+    if (val === "") {
+      setPacks("");
+      return;
+    }
+    const num = typeof val === "number" ? val : parseInt(val, 10);
+    const p = isNaN(num) ? 0 : Math.max(0, num);
     setPacks(p);
-    setTotalUnits(p * unitsPerPack);
+    const upp = typeof unitsPerPack === "number" ? unitsPerPack : 1;
+    setTotalUnits(p * upp);
   }
 
-  function handleUnitsPerPackChange(newUnitsPerPack: number) {
-    const upp = Math.max(1, newUnitsPerPack);
+  function handleUnitsPerPackChange(val: string | number) {
+    if (val === "") {
+      setUnitsPerPack("");
+      return;
+    }
+    const num = typeof val === "number" ? val : parseInt(val, 10);
+    const upp = isNaN(num) ? 1 : Math.max(1, num);
     setUnitsPerPack(upp);
-    setTotalUnits(packs * upp);
+    const p = typeof packs === "number" ? packs : 0;
+    setTotalUnits(p * upp);
   }
 
-  function handleTotalUnitsChange(newTotal: number) {
-    const t = Math.max(0, newTotal);
+  function handleTotalUnitsChange(val: string | number) {
+    if (val === "") {
+      setTotalUnits("");
+      if (packagingType === "PACKAGED") {
+        setPacks(0);
+      }
+      return;
+    }
+    const num = typeof val === "number" ? val : parseInt(val, 10);
+    const t = isNaN(num) ? 0 : Math.max(0, num);
     setTotalUnits(t);
-    if (packagingType === "PACKAGED" && unitsPerPack > 0) {
-      setPacks(Math.floor(t / unitsPerPack));
+    const upp = typeof unitsPerPack === "number" && unitsPerPack > 0 ? unitsPerPack : 1;
+    if (packagingType === "PACKAGED") {
+      setPacks(Math.floor(t / upp));
     }
   }
 
@@ -95,14 +116,24 @@ export function EditItemModal({
     setLoading(true);
     setError("");
 
+    const finalPacks = typeof packs === "number" ? packs : 0;
+    const finalUnitsPerPack =
+      typeof unitsPerPack === "number" && unitsPerPack > 0 ? unitsPerPack : 1;
+    const finalTotalUnits =
+      typeof totalUnits === "number"
+        ? totalUnits
+        : packagingType === "PACKAGED"
+        ? finalPacks * finalUnitsPerPack
+        : 0;
+
     const formData = new FormData();
     formData.append("itemId", item.id);
     formData.append("name", name.trim());
     formData.append("moduleId", moduleId);
     formData.append("packagingType", packagingType);
-    formData.append("packs", packs.toString());
-    formData.append("unitsPerPack", unitsPerPack.toString());
-    formData.append("totalUnits", totalUnits.toString());
+    formData.append("packs", finalPacks.toString());
+    formData.append("unitsPerPack", finalUnitsPerPack.toString());
+    formData.append("totalUnits", finalTotalUnits.toString());
 
     try {
       const res = await updateItem(formData);
@@ -241,8 +272,10 @@ export function EditItemModal({
                 type="button"
                 onClick={() => {
                   setPackagingType("PACKAGED");
-                  if (packs === 0) setPacks(1);
-                  setTotalUnits((packs || 1) * unitsPerPack);
+                  const p = typeof packs === "number" && packs > 0 ? packs : 1;
+                  const upp = typeof unitsPerPack === "number" && unitsPerPack > 0 ? unitsPerPack : 1;
+                  setPacks(p);
+                  setTotalUnits(p * upp);
                 }}
                 className={`flex items-center justify-center gap-2 rounded-xl border py-2.5 text-xs font-semibold transition-all ${
                   packagingType === "PACKAGED"
@@ -271,7 +304,10 @@ export function EditItemModal({
                 <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={() => handlePacksChange(packs - 1)}
+                    onClick={() => {
+                      const current = typeof packs === "number" ? packs : 0;
+                      handlePacksChange(Math.max(0, current - 1));
+                    }}
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted active:scale-95"
                   >
                     <Minus className="h-3.5 w-3.5" />
@@ -280,14 +316,16 @@ export function EditItemModal({
                     type="number"
                     min="0"
                     value={packs}
-                    onChange={(e) =>
-                      handlePacksChange(parseInt(e.target.value, 10) || 0)
-                    }
+                    onChange={(e) => handlePacksChange(e.target.value)}
+                    placeholder="0"
                     className="w-full rounded-lg border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus:border-primary"
                   />
                   <button
                     type="button"
-                    onClick={() => handlePacksChange(packs + 1)}
+                    onClick={() => {
+                      const current = typeof packs === "number" ? packs : 0;
+                      handlePacksChange(current + 1);
+                    }}
                     className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted active:scale-95"
                   >
                     <Plus className="h-3.5 w-3.5" />
@@ -303,9 +341,8 @@ export function EditItemModal({
                   type="number"
                   min="1"
                   value={unitsPerPack}
-                  onChange={(e) =>
-                    handleUnitsPerPackChange(parseInt(e.target.value, 10) || 1)
-                  }
+                  onChange={(e) => handleUnitsPerPackChange(e.target.value)}
+                  placeholder="1"
                   className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-sm text-foreground outline-none focus:border-primary"
                 />
               </div>
@@ -316,7 +353,7 @@ export function EditItemModal({
                   Total de unidades calculadas:
                 </span>
                 <span className="text-sm font-extrabold text-foreground">
-                  {totalUnits} unidades
+                  {typeof totalUnits === "number" ? totalUnits : 0} unidades
                 </span>
               </div>
             </div>
@@ -334,7 +371,10 @@ export function EditItemModal({
               <div className="flex items-center gap-2">
                 <button
                   type="button"
-                  onClick={() => handleTotalUnitsChange(totalUnits - 5)}
+                  onClick={() => {
+                    const current = typeof totalUnits === "number" ? totalUnits : 0;
+                    handleTotalUnitsChange(Math.max(0, current - 5));
+                  }}
                   title="-5 unidades"
                   className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium hover:bg-muted active:scale-95"
                 >
@@ -342,7 +382,10 @@ export function EditItemModal({
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleTotalUnitsChange(totalUnits - 1)}
+                  onClick={() => {
+                    const current = typeof totalUnits === "number" ? totalUnits : 0;
+                    handleTotalUnitsChange(Math.max(0, current - 1));
+                  }}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted active:scale-95"
                 >
                   <Minus className="h-3.5 w-3.5" />
@@ -351,21 +394,26 @@ export function EditItemModal({
                   type="number"
                   min="0"
                   value={totalUnits}
-                  onChange={(e) =>
-                    handleTotalUnitsChange(parseInt(e.target.value, 10) || 0)
-                  }
+                  onChange={(e) => handleTotalUnitsChange(e.target.value)}
+                  placeholder="0"
                   className="w-full rounded-lg border border-input bg-background py-1.5 text-center text-sm font-bold text-foreground outline-none focus:border-primary"
                 />
                 <button
                   type="button"
-                  onClick={() => handleTotalUnitsChange(totalUnits + 1)}
+                  onClick={() => {
+                    const current = typeof totalUnits === "number" ? totalUnits : 0;
+                    handleTotalUnitsChange(current + 1);
+                  }}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-border bg-background text-foreground hover:bg-muted active:scale-95"
                 >
                   <Plus className="h-3.5 w-3.5" />
                 </button>
                 <button
                   type="button"
-                  onClick={() => handleTotalUnitsChange(totalUnits + 5)}
+                  onClick={() => {
+                    const current = typeof totalUnits === "number" ? totalUnits : 0;
+                    handleTotalUnitsChange(current + 5);
+                  }}
                   title="+5 unidades"
                   className="rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs font-medium hover:bg-muted active:scale-95"
                 >

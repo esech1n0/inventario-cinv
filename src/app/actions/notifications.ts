@@ -44,3 +44,11 @@ export async function getPushSubscriptionStatus() {
 
   return { isSubscribed: !!user?.pushSubscription };
 }
+
+export async function getVapidPublicKey(): Promise<string> {
+  const key =
+    process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
+    process.env.VAPID_PUBLIC_KEY ||
+    "BLl_h_cqUORAwh12lLIUOn-lIXpLGhUK2XCJX9winI0Mifq5yYuSti99Mb0P75Jh_OyJ_y-9z_ahukDbCRJxGcI";
+  return key.replace(/["']/g, "").trim();
+}

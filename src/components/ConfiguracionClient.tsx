@@ -17,6 +17,7 @@ import {
 import {
   savePushSubscription,
   removePushSubscription,
+  getVapidPublicKey,
 } from "@/app/actions/notifications";
 import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 import { toast } from "@/components/Toast";
@@ -106,9 +107,17 @@ export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
           return;
         }
 
-        const vapidPublicKey =
-          process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-          "BLl_h_cqUORAwh12lLIUOn-lIXpLGhUK2XCJX9winI0Mifq5yYuSti99Mb0P75Jh_OyJ_y-9z_ahukDbCRJxGcI";
+        let vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        if (!vapidPublicKey) {
+          try {
+            vapidPublicKey = await getVapidPublicKey();
+          } catch (fetchKeyErr) {
+            console.warn("Aviso al obtener llave VAPID del servidor:", fetchKeyErr);
+          }
+        }
+        if (!vapidPublicKey) {
+          vapidPublicKey = "BLl_h_cqUORAwh12lLIUOn-lIXpLGhUK2XCJX9winI0Mifq5yYuSti99Mb0P75Jh_OyJ_y-9z_ahukDbCRJxGcI";
+        }
 
         // Limpiar suscripciones previas o desfasadas para evitar AbortError / push service error
         const existingSub = await reg.pushManager.getSubscription();

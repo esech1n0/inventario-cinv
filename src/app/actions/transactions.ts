@@ -127,7 +127,7 @@ export async function createTransaction(
           body: `${typeLabel} de ${quantity} unidad(es) de ${result.itemName}. Motivo: ${motive}${
             eventName ? ` (${eventName})` : ""
           }`,
-          url: "/dashboard/history",
+          url: session.user.role === "ADMIN" ? "/dashboard/history" : "/dashboard",
         });
 
         if (transactionType === "OUT" && result.newStock !== undefined && result.newStock <= 5) {

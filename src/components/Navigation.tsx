@@ -19,6 +19,8 @@ import {
   Sun,
   Moon,
   Laptop,
+  Dices,
+  Cookie,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 
@@ -66,6 +68,12 @@ export function Navigation({ user }: NavigationProps) {
       active: pathname === "/dashboard",
     },
     {
+      name: "Mis snacks",
+      href: "/dashboard/snacks",
+      icon: Cookie,
+      active: pathname.startsWith("/dashboard/snacks"),
+    },
+    {
       name: "Categorias",
       href: "/dashboard/categories",
       icon: Layers,
@@ -73,19 +81,25 @@ export function Navigation({ user }: NavigationProps) {
         pathname.startsWith("/dashboard/categories") ||
         pathname.startsWith("/dashboard/modules"),
     },
-    {
-      name: "Historial",
-      href: "/dashboard/history",
-      icon: History,
-      active: pathname.startsWith("/dashboard/history"),
-    },
     ...(isAdmin
       ? [
+          {
+            name: "Bitácora",
+            href: "/dashboard/history",
+            icon: History,
+            active: pathname.startsWith("/dashboard/history"),
+          },
           {
             name: "Usuarios",
             href: "/dashboard/users",
             icon: Users,
             active: pathname.startsWith("/dashboard/users"),
+          },
+          {
+            name: "Ruleta",
+            href: "/dashboard/ruleta",
+            icon: Dices,
+            active: pathname.startsWith("/dashboard/ruleta"),
           },
         ]
       : []),

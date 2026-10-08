@@ -33,7 +33,14 @@ model User {
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
 
+  // Ruleta de inventario semanal
+  rouletteEnabled  Boolean   @default(true)  // Participa en la ruleta
+  rouletteDrawn    Boolean   @default(false) // Ya le tocó en la ronda actual
+
   transactions  Transaction[]
+  rouletteDraws RouletteDraw[] @relation("RouletteWinner")
+  rouletteSpins RouletteDraw[] @relation("RouletteSpinner")
+  snackSelections SnackSelection[]
   accounts      Account[]
   sessions      Session[]
 
@@ -104,6 +111,7 @@ model Item {
 
   module       Module        @relation(fields: [moduleId], references: [id], onDelete: Cascade)
   transactions Transaction[]
+  snackSelections SnackSelection[]
 
   @@map("items")
 }
@@ -122,4 +130,43 @@ model Transaction {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("transactions")
+}
+
+model RouletteDraw {
+  id        String   @id @default(cuid())
+  userId    String
+  drawnById String
+  createdAt DateTime @default(now())
+
+  user    User @relation("RouletteWinner", fields: [userId], references: [id], onDelete: Cascade)
+  drawnBy User @relation("RouletteSpinner", fields: [drawnById], references: [id], onDelete: Cascade)
+
+  @@map("roulette_draws")
+}
+
+// Configuración global (fila única con id = 1)
+model AppSettings {
+  id               Int      @id @default(1)
+  weeklySnackLimit Int      @default(3)
+  snackModuleId    String?  // Categoría del inventario que contiene los snacks
+  updatedAt        DateTime @updatedAt
+
+  @@map("app_settings")
+}
+
+// Cada fila = 1 snack apartado por un usuario para una semana
+model SnackSelection {
+  id        String    @id @default(cuid())
+  userId    String
+  itemId    String
+  weekKey   String    // Lunes de la semana (YYYY-MM-DD, hora de México)
+  takenAt   DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item Item @relation(fields: [itemId], references: [id], onDelete: Cascade)
+
+  @@index([userId, weekKey])
+  @@index([weekKey, itemId])
+  @@map("snack_selections")
 }

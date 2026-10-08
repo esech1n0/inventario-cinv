@@ -39,7 +39,7 @@ export default auth((req) => {
   }
 
   // Admin-only routes
-  const adminRoutes = ["/dashboard/users"];
+  const adminRoutes = ["/dashboard/users", "/dashboard/ruleta", "/dashboard/history"];
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
   if (isAdminRoute && req.auth?.user?.role !== "ADMIN") {
     return NextResponse.redirect(new URL("/dashboard", req.url));

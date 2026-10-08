@@ -21,13 +21,26 @@ import {
 } from "@/app/actions/notifications";
 import { ChangePasswordModal } from "@/components/ChangePasswordModal";
 import { toast } from "@/components/Toast";
+import { updateSnackSettings } from "@/app/actions/snacks";
+import { Cookie } from "lucide-react";
+
+export interface CategoryOption {
+  id: string;
+  name: string;
+}
 
 interface ConfiguracionClientProps {
   user: {
     name: string;
     email: string;
+    email: string;
     role: string;
   };
+  snackSettings: {
+    weeklySnackLimit: number;
+    snackModuleId: string | null;
+  };
+  categories: CategoryOption[];
 }
 
 function urlBase64ToUint8Array(base64String: string) {
@@ -42,8 +55,13 @@ function urlBase64ToUint8Array(base64String: string) {
   return outputArray;
 }
 
-export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
+export function ConfiguracionClient({ user, snackSettings, categories }: ConfiguracionClientProps) {
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false);
+
+  // Snack settings state
+  const [snackLimit, setSnackLimit] = useState(snackSettings.weeklySnackLimit);
+  const [snackCategory, setSnackCategory] = useState(snackSettings.snackModuleId || "");
+  const [savingSnacks, setSavingSnacks] = useState(false);
 
   // Push notifications state
   const [isPushSupported, setIsPushSupported] = useState(false);
@@ -350,6 +368,67 @@ export function ConfiguracionClient({ user }: ConfiguracionClientProps) {
             </button>
           </div>
         </section>
+
+        {/* Sección de Snacks (Solo Administradores) */}
+        {isAdmin && (
+          <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-2.5 pb-4 border-b border-border/60">
+              <Cookie className="h-5 w-5 text-amber-500" />
+              <h2 className="text-base font-bold text-foreground">
+                Configuración de Snacks Semanales
+              </h2>
+            </div>
+            
+            <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2">
+              <div className="rounded-xl border border-border/60 bg-background p-4">
+                 <label className="block text-sm font-bold text-foreground mb-1">
+                   Límite Semanal de Snacks
+                 </label>
+                 <p className="mb-3 text-xs text-muted-foreground">
+                   Cantidad máxima de snacks que un usuario puede apartar por semana.
+                 </p>
+                 <input
+                    type="number"
+                    min="1"
+                    max="50"
+                    value={snackLimit}
+                    onChange={(e) => setSnackLimit(Number(e.target.value))}
+                    className="w-full rounded-xl border border-input bg-card px-3 py-2 text-sm outline-none transition-all focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
+                  />
+              </div>
+
+              <div className="rounded-xl border border-border/60 bg-background p-4">
+                 <label className="block text-sm font-bold text-foreground mb-1">
+                   Categoría de Inventario
+                 </label>
+                 <p className="mb-3 text-xs text-muted-foreground">
+                   Elige qué categoría (módulo) contiene los snacks para esta función.
+                 </p>
+                 <select
+                    value={snackCategory}
+                    onChange={(e) => setSnackCategory(e.target.value)}
+                    className="w-full rounded-xl border border-input bg-card px-3 py-2 text-sm outline-none transition-all focus:border-amber-500 focus:ring-1 focus:ring-amber-500/50"
+                  >
+                    <option value="" disabled>-- Selecciona una categoría --</option>
+                    {categories.map((c) => (
+                      <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                  </select>
+              </div>
+            </div>
+
+            <div className="mt-4 flex justify-end border-t border-border/60 pt-4">
+              <button
+                onClick={handleSaveSnackSettings}
+                disabled={savingSnacks}
+                className="flex items-center justify-center gap-2 rounded-xl bg-amber-500 px-5 py-2.5 text-xs font-bold text-white transition-all hover:bg-amber-600 active:scale-95 disabled:opacity-50"
+              >
+                {savingSnacks && <Loader2 className="h-4 w-4 animate-spin" />}
+                Guardar Configuración
+              </button>
+            </div>
+          </section>
+        )}
 
         {/* Sección 4: Opción de Cambiar Contraseña */}
         <section className="rounded-2xl border border-border bg-card p-5 sm:p-6 shadow-sm">

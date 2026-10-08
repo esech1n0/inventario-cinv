@@ -10,17 +10,21 @@ import {
   Calendar,
   User,
   ChevronRight,
+  ClipboardCheck,
 } from "lucide-react";
 import {
   TransactionDetailModal,
   TransactionDetail,
 } from "@/components/TransactionDetailModal";
+import { InventoryLog, type InventoryLogEntry } from "@/components/InventoryLog";
 
 interface HistoryClientProps {
   initialTransactions: TransactionDetail[];
+  initialDraws: InventoryLogEntry[];
 }
 
-export function HistoryClient({ initialTransactions }: HistoryClientProps) {
+export function HistoryClient({ initialTransactions, initialDraws }: HistoryClientProps) {
+  const [tab, setTab] = useState<"movements" | "inventory">("movements");
   const [filterType, setFilterType] = useState<"ALL" | "IN" | "OUT" | "CREATION">("ALL");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedTransaction, setSelectedTransaction] = useState<TransactionDetail | null>(null);
@@ -53,14 +57,46 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-foreground">
-            Historial de Movimientos y Auditoría
+            Bitácora
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Trazabilidad completa de consumo, creaciones, ingresos y salidas de material
+            {tab === "movements"
+              ? "Trazabilidad completa de consumo, creaciones, ingresos y salidas de material"
+              : "Registro de quién ha sido asignado al inventario semanal mediante la ruleta"}
           </p>
         </div>
       </div>
 
+      {/* Apartados de la bitácora */}
+      <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl border border-border/60 bg-muted/40 p-1 sm:inline-grid sm:w-auto">
+        {([
+          { id: "movements", label: "Movimientos", icon: History },
+          { id: "inventory", label: "Inventariado", icon: ClipboardCheck },
+        ] as const).map((t) => {
+          const Icon = t.icon;
+          return (
+            <button
+              key={t.id}
+              id={`bitacora-tab-${t.id}`}
+              type="button"
+              onClick={() => setTab(t.id)}
+              className={`flex items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-all ${
+                tab === t.id
+                  ? "bg-card text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Icon className="h-4 w-4" />
+              {t.label}
+            </button>
+          );
+        })}
+      </div>
+
+      {tab === "inventory" ? (
+        <InventoryLog entries={initialDraws} />
+      ) : (
+      <>
       <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="relative flex-1">
           <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -261,6 +297,8 @@ export function HistoryClient({ initialTransactions }: HistoryClientProps) {
           </div>
         )}
       </div>
+      </>
+      )}
 
       {/* Modal con especificaciones detalladas del movimiento */}
       <TransactionDetailModal

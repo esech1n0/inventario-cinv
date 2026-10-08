@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
 
-export type ToastType = "success" | "error" | "info";
+export type ToastType = "success" | "error" | "info" | "warning";
 
 export interface ToastMessage {
   id: string;
@@ -37,6 +37,11 @@ export const toast = {
       : "Ha ocurrido un error";
     if (globalShowToast) {
       globalShowToast({ type: "error", message: displayMsg, title });
+    }
+  },
+  warning: (message: string, title?: string, duration?: number) => {
+    if (globalShowToast) {
+      globalShowToast({ type: "warning", message, title, duration: duration ?? 8000 });
     }
   },
   info: (message: string, title?: string) => {
@@ -86,6 +91,7 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((t) => {
           const isError = t.type === "error";
           const isSuccess = t.type === "success";
+          const isWarning = t.type === "warning";
 
           return (
             <div
@@ -96,6 +102,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   ? "border-destructive/30 bg-destructive/15 text-destructive dark:bg-destructive/20"
                   : isSuccess
                   ? "border-emerald-500/30 bg-emerald-50 text-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-200 dark:border-emerald-500/30"
+                  : isWarning
+                  ? "border-amber-500/40 bg-amber-50 text-amber-950 dark:bg-amber-950/40 dark:text-amber-200 dark:border-amber-500/40"
                   : "border-border bg-card/95 text-foreground"
               }`}
             >
@@ -104,6 +112,8 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
                   <AlertCircle className="h-5 w-5 text-destructive" />
                 ) : isSuccess ? (
                   <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                ) : isWarning ? (
+                  <AlertCircle className="h-5 w-5 text-amber-500" />
                 ) : (
                   <Info className="h-5 w-5 text-primary" />
                 )}

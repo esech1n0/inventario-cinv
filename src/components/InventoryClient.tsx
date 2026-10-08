@@ -48,6 +48,8 @@ interface InventoryClientProps {
   initialItems: Item[];
   modules: Module[];
   userRole: string;
+  snackModuleId?: string | null;
+  weeklySnackLimit?: number;
 }
 
 type OptimisticAction =
@@ -59,6 +61,8 @@ export function InventoryClient({
   initialItems,
   modules,
   userRole,
+  snackModuleId,
+  weeklySnackLimit = 3,
 }: InventoryClientProps) {
   const [items, setItems] = useState<Item[]>(initialItems);
   const [prevInitial, setPrevInitial] = useState(initialItems);
@@ -527,6 +531,8 @@ export function InventoryClient({
         onClose={() => setIsWithdrawOpen(false)}
         items={items}
         selectedItemId={activeItemId}
+        snackModuleId={snackModuleId}
+        weeklySnackLimit={weeklySnackLimit}
         onSuccessOptimistic={handleWithdrawOptimistic}
         onErrorRevert={handleErrorRevert}
       />

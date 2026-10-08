@@ -7,7 +7,7 @@ import { SnacksClient, type SnackOption, type MySnack } from "@/components/Snack
 
 export const metadata = {
   title: "Mis snacks | Inventario CINV",
-  description: "Escoge y registra los snacks que tomar\u00e1s esta semana.",
+  description: "Escoge y registra los snacks que tomarás esta semana.",
 };
 
 export default async function SnacksPage() {
@@ -17,6 +17,7 @@ export default async function SnacksPage() {
   const weekKey = getWeekKey();
   let options: SnackOption[] = [];
   let mySnacks: MySnack[] = [];
+  let futureSnacks: { id: string; name: string; weekKey: string }[] = [];
   let limit = 3;
   let configured = false;
   let dbError: string | null = null;
@@ -26,16 +27,34 @@ export default async function SnacksPage() {
     limit = settings.weeklySnackLimit;
     configured = !!settings.snackModuleId;
 
-    const selections = await prisma.snackSelection.findMany({
-      where: { userId: session.user.id, weekKey },
-      orderBy: { createdAt: "asc" },
-      include: { item: { select: { name: true } } },
-    });
+    const [selections, futureSelections] = await Promise.all([
+      prisma.snackSelection.findMany({
+        where: { userId: session.user.id, weekKey },
+        orderBy: { createdAt: "asc" },
+        include: { item: { select: { name: true } } },
+      }),
+      prisma.snackSelection.findMany({
+        where: {
+          userId: session.user.id,
+          weekKey: { gt: weekKey },
+          takenAt: { not: null },
+        },
+        orderBy: { weekKey: "asc" },
+        include: { item: { select: { name: true } } },
+      }),
+    ]);
+
     mySnacks = selections.map((s) => ({
       id: s.id,
       itemId: s.itemId,
       name: s.item.name,
       takenAt: s.takenAt ? s.takenAt.toISOString() : null,
+    }));
+
+    futureSnacks = futureSelections.map((s) => ({
+      id: s.id,
+      name: s.item.name,
+      weekKey: s.weekKey,
     }));
 
     if (settings.snackModuleId) {
@@ -78,6 +97,7 @@ export default async function SnacksPage() {
         configured={configured}
         options={options}
         initialSnacks={mySnacks}
+        futureSnacks={futureSnacks}
       />
     </>
   );

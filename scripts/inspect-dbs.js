@@ -23,8 +23,8 @@ for (const line of envContent.split('\n')) {
   }
 }
 
-const prodUrl = env.DATABASE_URL;
-const devUrl = env.DATABASE_URL_DEVELOP;
+const prodUrl = env.DATABASE_URL_PRODUCTION || env.DATABASE_URL_PROD;
+const devUrl = env.DATABASE_URL_DEVELOP || env.DATABASE_URL;
 
 console.log('Production URL host:', prodUrl ? prodUrl.split('@')[1]?.split('/')[0] : 'not set');
 console.log('Develop URL host:', devUrl ? devUrl.split('@')[1]?.split('/')[0] : 'not set');

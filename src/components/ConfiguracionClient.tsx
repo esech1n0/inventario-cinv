@@ -33,7 +33,6 @@ interface ConfiguracionClientProps {
   user: {
     name: string;
     email: string;
-    email: string;
     role: string;
   };
   snackSettings: {
@@ -62,6 +61,25 @@ export function ConfiguracionClient({ user, snackSettings, categories }: Configu
   const [snackLimit, setSnackLimit] = useState(snackSettings.weeklySnackLimit);
   const [snackCategory, setSnackCategory] = useState(snackSettings.snackModuleId || "");
   const [savingSnacks, setSavingSnacks] = useState(false);
+
+  const handleSaveSnackSettings = async () => {
+    try {
+      setSavingSnacks(true);
+      const res = await updateSnackSettings({
+        weeklySnackLimit: Number(snackLimit),
+        snackModuleId: snackCategory || null,
+      });
+      if (res.success) {
+        toast.success("Configuración de snacks guardada.");
+      } else {
+        toast.error(res.error || "No se pudo guardar la configuración.");
+      }
+    } catch {
+      toast.error("Ocurrió un error al guardar la configuración.");
+    } finally {
+      setSavingSnacks(false);
+    }
+  };
 
   // Push notifications state
   const [isPushSupported, setIsPushSupported] = useState(false);

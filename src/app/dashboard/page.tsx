@@ -12,10 +12,12 @@ export default async function DashboardPage() {
 
   let modules: { id: string; name: string }[] = [];
   let items: any[] = [];
+  let snackModuleId: string | null = null;
+  let weeklySnackLimit = 3;
   let dbError: string | null = null;
 
   try {
-    const [fetchedModules, fetchedItems] = await Promise.all([
+    const [fetchedModules, fetchedItems, appSettings] = await Promise.all([
       prisma.module.findMany({
         orderBy: { name: "asc" },
         select: { id: true, name: true },
@@ -28,9 +30,12 @@ export default async function DashboardPage() {
           },
         },
       }),
+      prisma.appSettings.findUnique({ where: { id: 1 } }),
     ]);
     modules = fetchedModules;
     items = fetchedItems;
+    snackModuleId = appSettings?.snackModuleId ?? null;
+    weeklySnackLimit = appSettings?.weeklySnackLimit ?? 3;
   } catch (error: any) {
     console.error("Error al cargar datos en DashboardPage:", error);
     dbError = error?.message || "Error al conectar con la base de datos";
@@ -55,6 +60,8 @@ export default async function DashboardPage() {
         initialItems={serializedItems}
         modules={modules}
         userRole={session.user.role || "USER"}
+        snackModuleId={snackModuleId}
+        weeklySnackLimit={weeklySnackLimit}
       />
     </>
   );

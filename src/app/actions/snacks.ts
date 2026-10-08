@@ -94,13 +94,12 @@ export async function saveWeeklySnacks(itemIds: string[]): Promise<ActionResult>
       if (!moduleId) {
         return { success: false, error: "El administrador a\u00fan no configura la categor\u00eda de snacks" };
       }
-      if (parsed.data.itemIds.length > limit) {
-        return { success: false, error: `Solo puedes escoger ${limit} snack(s) por semana` };
-      }
-
       const already = await tx.snackSelection.count({ where: { userId, weekKey } });
-      if (already > 0) {
-        return { success: false, error: "Ya guardaste tu selecci\u00f3n de esta semana" };
+      if (already >= limit) {
+        return { success: false, error: `Ya alcanzaste el límite de ${limit} snack(s) para esta semana` };
+      }
+      if (already + parsed.data.itemIds.length > limit) {
+        return { success: false, error: `Solo te quedan ${limit - already} snack(s) disponibles para escoger esta semana` };
       }
 
       // Cantidad solicitada por art\u00edculo

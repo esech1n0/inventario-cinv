@@ -8,11 +8,21 @@ import {
   sendPushNotificationToUser,
   broadcastPushNotification,
 } from "@/lib/push-notifications";
+import { getWeekKey, getNextWeekKey } from "@/lib/week";
 
 export type ActionResult = {
   success: boolean;
   error?: string;
   newStock?: number;
+  snackNotice?: {
+    isSnack: boolean;
+    quantity: number;
+    limit: number;
+    currentWeekTaken: number;
+    exceeded: boolean;
+    excessCount: number;
+    message: string;
+  };
 };
 
 export async function createTransaction(
@@ -107,17 +117,117 @@ export async function createTransaction(
         },
       });
 
+      // Lógica de vinculación con Snacks Semanales cuando se retira 'Para mi'
+      let snackNotice: ActionResult["snackNotice"] = undefined;
+
+      if (transactionType === "OUT" && motive === "Para mi") {
+        const settings = await tx.appSettings.findUnique({ where: { id: 1 } });
+        if (settings?.snackModuleId && item.moduleId === settings.snackModuleId) {
+          const limit = settings.weeklySnackLimit || 3;
+          const currentWeekKey = getWeekKey();
+          const now = new Date();
+
+          // Contar snacks tomados en la semana actual
+          const currentTakenCount = await tx.snackSelection.count({
+            where: { userId: session.user.id, weekKey: currentWeekKey, takenAt: { not: null } },
+          });
+
+          // Selecciones pendientes sin tomar de la semana actual
+          const pendingSelections = await tx.snackSelection.findMany({
+            where: { userId: session.user.id, weekKey: currentWeekKey, takenAt: null },
+            orderBy: { createdAt: "asc" },
+          });
+
+          // Espacio restante en la semana actual
+          const availableSlotsInCurrentWeek = Math.max(limit - currentTakenCount, 0);
+          const takeInCurrentWeek = Math.min(quantity, availableSlotsInCurrentWeek);
+          const excessCount = quantity - takeInCurrentWeek;
+
+          // Asignar en la semana actual
+          let remainingCurrent = takeInCurrentWeek;
+          for (const pending of pendingSelections) {
+            if (remainingCurrent <= 0) break;
+            await tx.snackSelection.update({
+              where: { id: pending.id },
+              data: { takenAt: now, itemId },
+            });
+            remainingCurrent--;
+          }
+
+          if (remainingCurrent > 0) {
+            const currentData = Array.from({ length: remainingCurrent }).map(() => ({
+              userId: session.user.id,
+              itemId,
+              weekKey: currentWeekKey,
+              takenAt: now,
+            }));
+            await tx.snackSelection.createMany({ data: currentData });
+          }
+
+          // Si excedió el límite, distribuir el excedente a semanas posteriores
+          if (excessCount > 0) {
+            // Eliminar apartados pendientes que ya no podrá tomar esta semana
+            await tx.snackSelection.deleteMany({
+              where: { userId: session.user.id, weekKey: currentWeekKey, takenAt: null },
+            });
+
+            let remainingExcess = excessCount;
+            let weeksAhead = 1;
+
+            while (remainingExcess > 0) {
+              const targetWeekKey = getNextWeekKey(currentWeekKey, weeksAhead);
+              const targetCount = await tx.snackSelection.count({
+                where: { userId: session.user.id, weekKey: targetWeekKey },
+              });
+              const targetSlots = Math.max(limit - targetCount, 0);
+              const toPlace = targetSlots > 0 ? Math.min(remainingExcess, targetSlots) : (weeksAhead >= 10 ? remainingExcess : 0);
+
+              if (toPlace > 0) {
+                const futureData = Array.from({ length: toPlace }).map(() => ({
+                  userId: session.user.id,
+                  itemId,
+                  weekKey: targetWeekKey,
+                  takenAt: now,
+                }));
+                await tx.snackSelection.createMany({ data: futureData });
+                remainingExcess -= toPlace;
+              }
+              weeksAhead++;
+            }
+          }
+
+          const exceeded = excessCount > 0;
+          const message = exceeded
+            ? `Has superado el límite semanal de snacks (${limit} permitidos). No podrás tomar más snacks en la semana y los ${excessCount} que tomaste de más se verán reflejados cuando se reinicie el conteo de snacks en la semana posterior.`
+            : `Se registró como snack semanal (${currentTakenCount + takeInCurrentWeek} de ${limit} tomados esta semana).`;
+
+          snackNotice = {
+            isSnack: true,
+            quantity,
+            limit,
+            currentWeekTaken: currentTakenCount + takeInCurrentWeek,
+            exceeded,
+            excessCount,
+            message,
+          };
+        }
+      }
+
       return {
         success: true as const,
         newStock: newTotalUnits,
         itemName: item.name,
         packagingType: item.packagingType,
+        snackNotice,
       };
     });
 
     if (result.success) {
       revalidatePath("/dashboard");
       revalidatePath("/dashboard/history");
+      if (result.snackNotice) {
+        revalidatePath("/dashboard/snacks");
+      }
 
       // Notificaciones Push con manejo seguro de errores
       try {
@@ -141,7 +251,7 @@ export async function createTransaction(
         console.error("Error enviando push tras transacción:", e);
       }
 
-      return { success: true, newStock: result.newStock };
+      return { success: true, newStock: result.newStock, snackNotice: result.snackNotice };
     }
 
     return { success: false, error: result.error };

@@ -23,8 +23,21 @@ for (const line of envContent.split('\n')) {
   }
 }
 
-const prodPrisma = new PrismaClient({ datasources: { db: { url: env.DATABASE_URL } } });
-const devPrisma = new PrismaClient({ datasources: { db: { url: env.DATABASE_URL_DEVELOP } } });
+const prodUrl = env.DATABASE_URL_PRODUCTION || env.DATABASE_URL_PROD;
+const devUrl = env.DATABASE_URL_DEVELOP || env.DATABASE_URL;
+
+if (!prodUrl || !devUrl) {
+  console.error("❌ Faltan URLs de base de datos en .env (se requiere DATABASE_URL_PRODUCTION y DATABASE_URL o DATABASE_URL_DEVELOP)");
+  process.exit(1);
+}
+
+if (prodUrl === devUrl) {
+  console.error("❌ ERROR CRÍTICO: La URL de Producción y Develop son idénticas. Abortando para evitar sobrescritura.");
+  process.exit(1);
+}
+
+const prodPrisma = new PrismaClient({ datasources: { db: { url: prodUrl } } });
+const devPrisma = new PrismaClient({ datasources: { db: { url: devUrl } } });
 
 async function sync() {
   console.log('--- Obteniendo datos de PRODUCCIÓN ---');

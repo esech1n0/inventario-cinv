@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { X, ArrowDownRight, Calendar, AlertCircle, Loader2 } from "lucide-react";
+import { X, ArrowDownRight, Calendar, AlertCircle, Loader2, Cookie } from "lucide-react";
 import { createTransaction } from "@/app/actions/transactions";
 import { toast } from "@/components/Toast";
 
@@ -23,6 +23,8 @@ interface WithdrawModalProps {
   onClose: () => void;
   items: Item[];
   selectedItemId?: string;
+  snackModuleId?: string | null;
+  weeklySnackLimit?: number;
   onSuccessOptimistic: (
     itemId: string,
     quantity: number,
@@ -37,6 +39,8 @@ export function WithdrawModal({
   onClose,
   items,
   selectedItemId,
+  snackModuleId,
+  weeklySnackLimit = 3,
   onSuccessOptimistic,
   onErrorRevert,
 }: WithdrawModalProps) {
@@ -108,6 +112,19 @@ export function WithdrawModal({
         console.error("Detalle técnico del error al retirar:", res.error);
         toast.error("Ha ocurrido un error");
         onErrorRevert("Ha ocurrido un error");
+      } else {
+        if (res.snackNotice?.exceeded) {
+          toast.warning(
+            res.snackNotice.message,
+            "Límite Semanal de Snacks Superado",
+            10000
+          );
+        } else if (res.snackNotice) {
+          toast.info(
+            res.snackNotice.message,
+            "Snack Semanal"
+          );
+        }
       }
     } catch (err: unknown) {
       console.error("Detalle técnico de comunicación al retirar:", err);
@@ -257,6 +274,18 @@ export function WithdrawModal({
               ))}
             </div>
           </div>
+
+          {motive === "Para mi" && snackModuleId && currentItem?.module.id === snackModuleId && (
+            <div className="animate-fade-in rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs text-amber-900 dark:text-amber-200">
+              <div className="flex items-center gap-1.5 font-bold text-amber-800 dark:text-amber-300">
+                <Cookie className="h-4 w-4 text-amber-500" />
+                <span>Artículo configurado como Snack Semanal</span>
+              </div>
+              <p className="mt-1 text-[11px] leading-relaxed text-muted-foreground">
+                Este retiro se registrará en tu conteo de snacks (límite de {weeklySnackLimit} por semana). Si retiras más del límite, no podrás tomar más esta semana y el excedente se reflejará en la semana posterior cuando se reinicie el conteo.
+              </p>
+            </div>
+          )}
 
           {isEventMotive && (
             <div className="animate-fade-in space-y-1.5 rounded-xl border border-primary/20 bg-primary/5 p-3.5">

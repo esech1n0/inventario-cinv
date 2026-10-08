@@ -32,3 +32,10 @@ export function formatWeekRange(weekKey: string): string {
     ? `${fmt(start, { day: "numeric" })} – ${fmt(end, { day: "numeric", month: "long" })}`
     : `${fmt(start, { day: "numeric", month: "short" })} – ${fmt(end, { day: "numeric", month: "short" })}`;
 }
+
+/** Devuelve la clave de la semana siguiente (o N semanas adelante) basada en un weekKey. */
+export function getNextWeekKey(weekKey: string, weeksAhead: number = 1): string {
+  const start = new Date(`${weekKey}T12:00:00Z`);
+  start.setUTCDate(start.getUTCDate() + 7 * weeksAhead);
+  return start.toISOString().slice(0, 10);
+}

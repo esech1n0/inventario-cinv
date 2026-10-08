@@ -125,10 +125,10 @@ export function Navigation({ user }: NavigationProps) {
   return (
     <>
       {/* Top Header unificado (para Computadora y Móviles) */}
-      <header className="sticky top-0 z-40 border-b border-border/80 bg-card/80 backdrop-blur-md">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6">
-          {/* Lado Izquierdo: Menú Hamburguesa + Logo + Nombre de la App (uno al lado del otro) */}
-          <div className="flex items-center gap-3">
+      <header className="sticky top-0 z-40 w-full border-b border-border/80 bg-card/80 backdrop-blur-md">
+        <div className="flex h-16 w-full items-center justify-between px-3 sm:px-5 lg:px-6">
+          {/* Lado Izquierdo: Menú Hamburguesa + Logo CINV (al extremo lateral izquierdo) */}
+          <div className="flex items-center gap-2.5 sm:gap-3">
             {/* Botón Menú Hamburguesa */}
             <button
               onClick={() => setIsDrawerOpen(!isDrawerOpen)}
@@ -139,7 +139,7 @@ export function Navigation({ user }: NavigationProps) {
               <Menu className="h-5 w-5" />
             </button>
 
-            {/* Logo y Nombre uno al lado del otro */}
+            {/* Logo CINV y Nombre siguiente al menú hamburguesa */}
             <Link
               href="/dashboard"
               className="flex items-center gap-2.5 transition-transform active:scale-95"
@@ -154,13 +154,13 @@ export function Navigation({ user }: NavigationProps) {
                   className="h-8 sm:h-9 w-auto object-contain"
                 />
               </div>
-              <span className="text-base font-bold tracking-tight text-foreground">
+              <span className="hidden sm:inline-block text-base font-bold tracking-tight text-foreground">
                 Inventario CINV
               </span>
             </Link>
           </div>
 
-          {/* Lado Derecho: Opción 'Ver notificaciones' con icono de campanita que lleva a Avisos */}
+          {/* Lado Derecho: Símbolo de notificaciones al extremo derecho */}
           <div className="flex items-center gap-2">
             <Link
               href="/dashboard/avisos"

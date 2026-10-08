@@ -6,7 +6,7 @@
     "scripts": {
         "dev": "cross-env NODE_OPTIONS=--dns-result-order=ipv4first next dev",
         "prebuild": "node scripts/sync-assets.js",
-        "build": "next build",
+        "build": "node scripts/apply-migrations.js && next build",
         "start": "next start",
         "lint": "eslint",
         "test": "vitest run",

@@ -8,14 +8,13 @@ function ensureVapidConfigured(): boolean {
 
   const rawPub =
     process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY ||
-    process.env.VAPID_PUBLIC_KEY ||
-    "BLl_h_cqUORAwh12lLIUOn-lIXpLGhUK2XCJX9winI0Mifq5yYuSti99Mb0P75Jh_OyJ_y-9z_ahukDbCRJxGcI";
-  const rawPriv =
-    process.env.VAPID_PRIVATE_KEY ||
-    "U8T-lSl2ZoAFtHWyoJb_yk4N3SRPx_SLG8xPy9ItBZ4";
-  const rawSub =
-    process.env.VAPID_SUBJECT ||
-    "mailto:admin@cinv.org";
+    process.env.VAPID_PUBLIC_KEY;
+  const rawPriv = process.env.VAPID_PRIVATE_KEY;
+  const rawSub = process.env.VAPID_SUBJECT || "mailto:admin@cinv.org";
+
+  if (!rawPub || !rawPriv) {
+    return false;
+  }
 
   // Clean keys: strip surrounding quotes, whitespace, and potential padding issues
   const cleanPub = rawPub.replace(/["']/g, "").trim();

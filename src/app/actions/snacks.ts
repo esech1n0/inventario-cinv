@@ -185,17 +185,20 @@ export async function takeSnack(selectionId: string): Promise<ActionResult<{ tak
         throw new Error("SIN_STOCK");
       }
 
-      const item = sel.item;
-      if (item.packagingType === "PACKAGED" && item.unitsPerPack > 0) {
+      const updatedItem = await tx.item.findUnique({
+        where: { id: sel.itemId },
+      });
+
+      if (updatedItem && updatedItem.packagingType === "PACKAGED" && updatedItem.unitsPerPack > 0) {
         await tx.item.update({
-          where: { id: item.id },
-          data: { packs: Math.floor((item.totalUnits - 1) / item.unitsPerPack) },
+          where: { id: updatedItem.id },
+          data: { packs: Math.floor(updatedItem.totalUnits / updatedItem.unitsPerPack) },
         });
       }
 
       await tx.transaction.create({
         data: {
-          itemId: item.id,
+          itemId: sel.itemId,
           userId,
           transactionType: "OUT",
           quantity: 1,

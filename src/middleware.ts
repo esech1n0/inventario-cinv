@@ -19,10 +19,11 @@ export default auth((req) => {
   );
 
   // API, static assets, and Server Actions
+  const isStaticAsset = /\.(png|jpg|jpeg|gif|svg|ico|json|webmanifest|js|css|txt|woff2?)$/i.test(pathname);
   if (
     pathname.startsWith("/api") ||
     pathname.startsWith("/_next") ||
-    pathname.includes(".") ||
+    isStaticAsset ||
     req.headers.has("next-action")
   ) {
     return NextResponse.next();

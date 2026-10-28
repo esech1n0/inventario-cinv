@@ -21,7 +21,7 @@ export const authConfig: NextAuthConfig = {
         session.user.id = (token.id as string) || (token.sub as string);
         (session.user as { role: string }).role = (token.role as string) || "USER";
         (session.user as { isApproved: boolean }).isApproved =
-          token.isApproved !== undefined ? (token.isApproved as boolean) : true;
+          token.isApproved !== undefined ? Boolean(token.isApproved) : false;
       }
       return session;
     },

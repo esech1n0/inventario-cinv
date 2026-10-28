@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ToastProvider } from "@/components/Toast";
+import { ConfirmDialogProvider } from "@/components/ConfirmModal";
 import { ThemeProvider } from "@/components/ThemeProvider";
 import { PwaUpdatePrompt } from "@/components/PwaUpdatePrompt";
 
@@ -123,7 +124,9 @@ export default function RootLayout({
       </head>
       <body className="min-h-full flex flex-col bg-background text-foreground">
         <ThemeProvider>
-          <ToastProvider>{children}</ToastProvider>
+          <ToastProvider>
+            <ConfirmDialogProvider>{children}</ConfirmDialogProvider>
+          </ToastProvider>
           <PwaUpdatePrompt />
         </ThemeProvider>
       </body>

@@ -19,6 +19,7 @@ import {
   type RouletteDrawEntry,
 } from "@/app/actions/roulette";
 import { toast } from "@/components/Toast";
+import { confirmDialog } from "@/components/ConfirmModal";
 
 interface RouletteClientProps {
   initialUsers: RouletteUser[];
@@ -146,6 +147,17 @@ export function RouletteClient({ initialUsers, initialHistory }: RouletteClientP
 
   async function handleReset() {
     if (spinning) return;
+
+    const confirmed = await confirmDialog({
+      title: "Reiniciar Ronda de Ruleta",
+      description: "¿Deseas reiniciar la ronda actual?\nTodos los participantes volverán a estar disponibles para girar la ruleta.",
+      confirmText: "Reiniciar Ronda",
+      cancelText: "Cancelar",
+      variant: "warning",
+    });
+
+    if (!confirmed) return;
+
     setResetting(true);
     const res = await resetRouletteRound();
     if (res.success) {

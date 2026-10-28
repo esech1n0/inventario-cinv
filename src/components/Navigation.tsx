@@ -23,6 +23,7 @@ import {
   Cookie,
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
+import { confirmDialog } from "@/components/ConfirmModal";
 
 interface NavigationProps {
   user: {
@@ -56,6 +57,15 @@ export function Navigation({ user }: NavigationProps) {
   }, []);
 
   async function handleLogout() {
+    const confirmed = await confirmDialog({
+      title: "Cerrar Sesión",
+      description: "¿Estás seguro de que deseas salir del sistema?",
+      confirmText: "Cerrar Sesión",
+      cancelText: "Permanecer",
+      variant: "default",
+    });
+    if (!confirmed) return;
+
     setIsLoggingOut(true);
     await signOut({ callbackUrl: "/login" });
   }

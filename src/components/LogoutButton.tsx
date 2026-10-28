@@ -3,11 +3,21 @@
 import { signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
 import { useState } from "react";
+import { confirmDialog } from "@/components/ConfirmModal";
 
 export function LogoutButton() {
   const [loading, setLoading] = useState(false);
 
   async function handleLogout() {
+    const confirmed = await confirmDialog({
+      title: "Cerrar Sesión",
+      description: "¿Estás seguro de que deseas salir del sistema?",
+      confirmText: "Cerrar Sesión",
+      cancelText: "Permanecer",
+      variant: "default",
+    });
+    if (!confirmed) return;
+
     setLoading(true);
     await signOut({ callbackUrl: "/login" });
   }

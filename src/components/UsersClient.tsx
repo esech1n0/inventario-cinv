@@ -17,6 +17,7 @@ import { updateUserRole, deleteUser } from "@/app/actions/users";
 import { AdminChangePasswordModal } from "@/components/AdminChangePasswordModal";
 import { AddUserModal } from "@/components/AddUserModal";
 import { toast } from "@/components/Toast";
+import { confirmDialog } from "@/components/ConfirmModal";
 import type { CreatedUserData } from "@/app/actions/users";
 
 interface UserItem {
@@ -67,11 +68,15 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
 
   async function handleRoleChange(userId: string, userName: string, newRole: "ADMIN" | "USER") {
     const roleName = newRole === "ADMIN" ? "Administrador" : "Integrante";
-    if (
-      !confirm(
-        `¿Deseas cambiar el rol de ${userName} a ${roleName}?`
-      )
-    ) {
+    const confirmed = await confirmDialog({
+      title: "Cambiar Rol de Usuario",
+      description: `¿Deseas cambiar el rol de ${userName} a ${roleName}?`,
+      confirmText: "Cambiar Rol",
+      cancelText: "Cancelar",
+      variant: "warning",
+    });
+
+    if (!confirmed) {
       return;
     }
 
@@ -97,11 +102,15 @@ export function UsersClient({ initialUsers, currentUserId }: UsersClientProps) {
   }
 
   async function handleDelete(userId: string, userName: string) {
-    if (
-      !confirm(
-        `¿Eliminar definitivamente a ${userName}? Esta acción no se puede deshacer.`
-      )
-    ) {
+    const confirmed = await confirmDialog({
+      title: "Eliminar Usuario",
+      description: `¿Estás seguro de eliminar definitivamente a ${userName}?\nEsta acción no se puede deshacer.`,
+      confirmText: "Eliminar Usuario",
+      cancelText: "Cancelar",
+      variant: "destructive",
+    });
+
+    if (!confirmed) {
       return;
     }
 

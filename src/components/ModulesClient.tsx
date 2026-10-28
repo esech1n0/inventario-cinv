@@ -16,6 +16,7 @@ import {
 import { createModule, deleteModule, updateModule } from "@/app/actions/modules";
 import { CategoryItemsModal, type CategoryItem } from "@/components/CategoryItemsModal";
 import { toast } from "@/components/Toast";
+import { confirmDialog, alertDialog } from "@/components/ConfirmModal";
 
 interface ModuleWithCount {
   id: string;
@@ -120,16 +121,28 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
 
   async function handleDeleteModule(moduleId: string, moduleName: string, itemsCount: number) {
     if (!isAdmin) {
-      alert("Solo los administradores pueden eliminar categorías.");
+      await alertDialog({
+        title: "Acceso Denegado",
+        description: "Solo los administradores pueden eliminar categorías.",
+        variant: "warning",
+      });
       return;
     }
 
-    const confirmMsg =
+    const description =
       itemsCount > 0
-        ? `¡ADVERTENCIA! La categoría "${moduleName}" contiene ${itemsCount} artículo(s). Si la eliminas, todos sus artículos y registros asociados serán eliminados permanentemente. ¿Deseas continuar?`
-        : `¿Estás seguro de eliminar la categoría "${moduleName}"?`;
+        ? `¡ADVERTENCIA! La categoría "${moduleName}" contiene ${itemsCount} artículo(s).\n\nSi la eliminas, todos sus artículos y registros asociados serán eliminados permanentemente del sistema. ¿Deseas continuar?`
+        : `¿Estás seguro de que deseas eliminar la categoría "${moduleName}"?`;
 
-    if (!confirm(confirmMsg)) return;
+    const confirmed = await confirmDialog({
+      title: "Eliminar Categoría",
+      description,
+      confirmText: "Eliminar Categoría",
+      cancelText: "Cancelar",
+      variant: "destructive",
+    });
+
+    if (!confirmed) return;
 
     setModules((prev) => prev.filter((m) => m.id !== moduleId));
 

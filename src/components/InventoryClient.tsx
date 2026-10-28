@@ -21,6 +21,7 @@ import { EditItemModal } from "@/components/EditItemModal";
 import { RegisteredItemsModal } from "@/components/RegisteredItemsModal";
 import { StoredCategoriesModal } from "@/components/StoredCategoriesModal";
 import { toast } from "@/components/Toast";
+import { confirmDialog, alertDialog } from "@/components/ConfirmModal";
 import { deleteItem } from "@/app/actions/items";
 
 export interface Item {
@@ -205,11 +206,23 @@ export function InventoryClient({
 
   async function handleDeleteItem(itemId: string, itemName: string) {
     if (userRole !== "ADMIN") {
-      alert("Solo los administradores pueden eliminar artículos.");
+      await alertDialog({
+        title: "Acceso Denegado",
+        description: "Solo los administradores pueden eliminar artículos del inventario.",
+        variant: "warning",
+      });
       return;
     }
 
-    if (!confirm(`¿Estás seguro de eliminar "${itemName}" del inventario?`)) {
+    const confirmed = await confirmDialog({
+      title: "Eliminar Artículo",
+      description: `¿Estás seguro de que deseas eliminar "${itemName}" del inventario?\n\nEsta acción eliminará el artículo y sus registros históricos asociados de forma permanente.`,
+      confirmText: "Eliminar Artículo",
+      cancelText: "Cancelar",
+      variant: "destructive",
+    });
+
+    if (!confirmed) {
       return;
     }
 

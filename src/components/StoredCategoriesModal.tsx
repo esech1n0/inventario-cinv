@@ -101,6 +101,15 @@ export function StoredCategoriesModal({
             filtered.map((cat) => (
               <div
                 key={cat.id}
+                role={onSelectCategory ? "button" : undefined}
+                tabIndex={onSelectCategory ? 0 : undefined}
+                onKeyDown={(e) => {
+                  if (onSelectCategory && (e.key === "Enter" || e.key === " ")) {
+                    e.preventDefault();
+                    onSelectCategory(cat.id);
+                    onClose();
+                  }
+                }}
                 onClick={() => {
                   if (onSelectCategory) {
                     onSelectCategory(cat.id);

@@ -123,6 +123,78 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* =========================================================
+   SISTEMA INTEGRAL DE CURSORES DEL MOUSE (UX & ACCESIBILIDAD)
+   ========================================================= */
+
+/* 1. Elementos interactivos habilitados (pointer) */
+button:not(:disabled):not([aria-disabled="true"]),
+[role="button"]:not(:disabled):not([aria-disabled="true"]),
+[type="button"]:not(:disabled):not([aria-disabled="true"]),
+[type="submit"]:not(:disabled):not([aria-disabled="true"]),
+[type="reset"]:not(:disabled):not([aria-disabled="true"]),
+a[href],
+select:not(:disabled):not([aria-disabled="true"]),
+input[type="checkbox"]:not(:disabled):not([aria-disabled="true"]),
+input[type="radio"]:not(:disabled):not([aria-disabled="true"]),
+input[type="range"]:not(:disabled):not([aria-disabled="true"]),
+input[type="color"]:not(:disabled):not([aria-disabled="true"]),
+input[type="file"]:not(:disabled):not([aria-disabled="true"]),
+label[for]:not(:disabled),
+summary,
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]),
+[role="switch"]:not([aria-disabled="true"]),
+[role="option"]:not([aria-disabled="true"]),
+[role="checkbox"]:not(:disabled):not([aria-disabled="true"]),
+[role="radio"]:not(:disabled):not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+/* 2. Elementos y controles interactivos deshabilitados (not-allowed) */
+button:disabled,
+button[disabled],
+button[aria-disabled="true"],
+[role="button"]:disabled,
+[role="button"][disabled],
+[role="button"][aria-disabled="true"],
+[type="button"]:disabled,
+[type="submit"]:disabled,
+[type="reset"]:disabled,
+input:disabled,
+input[disabled],
+input[aria-disabled="true"],
+select:disabled,
+select[disabled],
+select[aria-disabled="true"],
+textarea:disabled,
+textarea[disabled],
+textarea[aria-disabled="true"],
+[disabled],
+[aria-disabled="true"],
+.disabled {
+  cursor: not-allowed !important;
+}
+
+/* 3. Campos de entrada editables (text) */
+input[type="text"]:not(:disabled):not([readonly]),
+input[type="email"]:not(:disabled):not([readonly]),
+input[type="password"]:not(:disabled):not([readonly]),
+input[type="number"]:not(:disabled):not([readonly]),
+input[type="search"]:not(:disabled):not([readonly]),
+input[type="tel"]:not(:disabled):not([readonly]),
+input[type="url"]:not(:disabled):not([readonly]),
+textarea:not(:disabled):not([readonly]),
+[contenteditable="true"] {
+  cursor: text;
+}
+
+/* 4. Campos de solo lectura (default) */
+input:read-only,
+textarea:read-only {
+  cursor: default;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 6px;

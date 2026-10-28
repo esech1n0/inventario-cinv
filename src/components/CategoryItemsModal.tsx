@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { X, Layers, Box, Package, Search, ExternalLink } from "lucide-react";
 import Link from "next/link";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 export interface CategoryItem {
   id: string;
@@ -29,6 +30,8 @@ export function CategoryItemsModal({
 }: CategoryItemsModalProps) {
   const [search, setSearch] = useState("");
 
+  const { modalRef } = useModalFocusTrap({ isOpen, onClose });
+
   if (!isOpen) return null;
 
   const totalUnits = items.reduce((acc, curr) => acc + curr.totalUnits, 0);
@@ -38,8 +41,22 @@ export function CategoryItemsModal({
   );
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="animate-fade-in flex max-h-[88vh] sm:max-h-[82vh] w-full max-w-2xl flex-col rounded-t-3xl sm:rounded-2xl border border-border bg-card shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+        aria-hidden="true"
+      />
+
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="category-items-modal-title"
+        tabIndex={-1}
+        className="relative z-50 animate-scale-up flex max-h-[88vh] sm:max-h-[82vh] w-full max-w-2xl flex-col rounded-t-3xl sm:rounded-2xl border border-border bg-card shadow-2xl focus:outline-none"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border p-5 sm:p-6">
           <div className="flex items-center gap-3">
@@ -48,7 +65,7 @@ export function CategoryItemsModal({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-foreground sm:text-xl">
+                <h2 id="category-items-modal-title" className="text-lg font-bold text-foreground sm:text-xl">
                   {categoryName}
                 </h2>
                 <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-xs font-extrabold text-primary">
@@ -61,6 +78,7 @@ export function CategoryItemsModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
             className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             aria-label="Cerrar modal"

@@ -4,6 +4,7 @@ import { useState } from "react";
 import { X, ArrowDownRight, Calendar, AlertCircle, Loader2, Cookie } from "lucide-react";
 import { createTransaction } from "@/app/actions/transactions";
 import { toast } from "@/components/Toast";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 interface Item {
   id: string;
@@ -50,6 +51,8 @@ export function WithdrawModal({
   const [eventName, setEventName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const { modalRef } = useModalFocusTrap({ isOpen, onClose });
 
   if (!isOpen) return null;
 
@@ -136,15 +139,29 @@ export function WithdrawModal({
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 backdrop-blur-sm p-0 sm:p-4">
-      <div className="animate-fade-in w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-border bg-card p-6 shadow-2xl">
+    <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+      {/* Backdrop */}
+      <div
+        onClick={onClose}
+        className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+        aria-hidden="true"
+      />
+
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="withdraw-modal-title"
+        tabIndex={-1}
+        className="relative z-50 animate-scale-up w-full max-w-lg rounded-t-3xl sm:rounded-2xl border border-border bg-card p-6 shadow-2xl focus:outline-none"
+      >
         <div className="flex items-center justify-between pb-4 border-b border-border">
           <div className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-destructive/10 text-destructive">
               <ArrowDownRight className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 id="withdraw-modal-title" className="text-lg font-bold text-foreground">
                 Retirar Material (Salida)
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -153,8 +170,10 @@ export function WithdrawModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+            aria-label="Cerrar modal"
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
           >
             <X className="h-5 w-5" />
           </button>

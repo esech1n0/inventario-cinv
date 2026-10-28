@@ -17,6 +17,7 @@ import {
   Copy,
   Check,
 } from "lucide-react";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 export interface TransactionDetail {
   id: string;
@@ -55,17 +56,7 @@ export function TransactionDetailModal({
 }: TransactionDetailModalProps) {
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        onClose();
-      }
-    }
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-    }
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [isOpen, onClose]);
+  const { modalRef } = useModalFocusTrap({ isOpen, onClose });
 
   if (!isOpen || !transaction) return null;
 
@@ -104,10 +95,18 @@ export function TransactionDetailModal({
       <div
         onClick={onClose}
         className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+        aria-hidden="true"
       />
 
       {/* Modal Dialog */}
-      <div className="relative z-50 w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="tx-detail-modal-title"
+        tabIndex={-1}
+        className="relative z-50 w-full max-w-xl rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up max-h-[90vh] overflow-y-auto focus:outline-none"
+      >
         {/* Cabecera */}
         <div className="flex items-start justify-between border-b border-border/60 pb-4">
           <div className="flex items-center gap-3">
@@ -131,7 +130,7 @@ export function TransactionDetailModal({
 
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-lg font-bold text-foreground">
+                <h2 id="tx-detail-modal-title" className="text-lg font-bold text-foreground">
                   Detalle del Movimiento
                 </h2>
                 <span
@@ -157,6 +156,7 @@ export function TransactionDetailModal({
           </div>
 
           <button
+            type="button"
             onClick={onClose}
             title="Cerrar ventana"
             aria-label="Cerrar modal"

@@ -16,6 +16,7 @@ import {
   Sparkles,
 } from "lucide-react";
 import { createUser, CreatedUserData } from "@/app/actions/users";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 interface AddUserModalProps {
   isOpen: boolean;
@@ -33,6 +34,12 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const { modalRef } = useModalFocusTrap({
+    isOpen,
+    onClose: handleClose,
+    closeOnEscape: !loading,
+  });
 
   if (!isOpen) return null;
 
@@ -111,10 +118,18 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
       <div
         onClick={handleClose}
         className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+        aria-hidden="true"
       />
 
       {/* Modal Card */}
-      <div className="relative z-50 w-full max-w-lg rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-2xl animate-scale-up">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="add-user-modal-title"
+        tabIndex={-1}
+        className="relative z-50 w-full max-w-lg rounded-3xl border border-border bg-card p-6 sm:p-7 shadow-2xl animate-scale-up focus:outline-none"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/60 pb-4">
           <div className="flex items-center gap-3">
@@ -122,7 +137,7 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
               <UserPlus className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 id="add-user-modal-title" className="text-lg font-bold text-foreground">
                 Registrar Nuevo Usuario
               </h2>
               <p className="text-xs text-muted-foreground">
@@ -131,8 +146,10 @@ export function AddUserModal({ isOpen, onClose, onUserCreated }: AddUserModalPro
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             disabled={loading}
+            aria-label="Cerrar modal"
             className="rounded-xl p-2 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5" />

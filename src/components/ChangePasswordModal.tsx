@@ -12,6 +12,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import { changeMyPassword } from "@/app/actions/auth";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -35,6 +36,12 @@ export function ChangePasswordModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const { modalRef } = useModalFocusTrap({
+    isOpen,
+    onClose: handleClose,
+    closeOnEscape: !loading,
+  });
 
   if (!isOpen) return null;
 
@@ -93,10 +100,18 @@ export function ChangePasswordModal({
       <div
         onClick={handleClose}
         className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+        aria-hidden="true"
       />
 
       {/* Modal Dialog */}
-      <div className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="change-pwd-modal-title"
+        tabIndex={-1}
+        className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up focus:outline-none"
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border/60 pb-4">
           <div className="flex items-center gap-3">
@@ -104,15 +119,17 @@ export function ChangePasswordModal({
               <KeyRound className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-lg font-bold text-foreground">
+              <h2 id="change-pwd-modal-title" className="text-lg font-bold text-foreground">
                 Cambiar Contraseña
               </h2>
               <p className="text-xs text-muted-foreground">{userEmail}</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             disabled={loading}
+            aria-label="Cerrar modal"
             className="rounded-xl p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5" />

@@ -12,6 +12,7 @@ import {
   ShieldCheck,
 } from "lucide-react";
 import { adminChangeUserPassword } from "@/app/actions/users";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 interface AdminChangePasswordModalProps {
   isOpen: boolean;
@@ -35,6 +36,12 @@ export function AdminChangePasswordModal({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+
+  const { modalRef } = useModalFocusTrap({
+    isOpen,
+    onClose: handleClose,
+    closeOnEscape: !loading,
+  });
 
   if (!isOpen || !user) return null;
 
@@ -88,19 +95,28 @@ export function AdminChangePasswordModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Backdrop */}
       <div
         onClick={handleClose}
         className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+        aria-hidden="true"
       />
 
-      <div className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up">
+      <div
+        ref={modalRef}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="admin-change-pwd-modal-title"
+        tabIndex={-1}
+        className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up focus:outline-none"
+      >
         <div className="flex items-center justify-between border-b border-border/60 pb-4">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
               <ShieldCheck className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-base font-bold text-foreground">
+              <h2 id="admin-change-pwd-modal-title" className="text-base font-bold text-foreground">
                 Cambiar Contraseña
               </h2>
               <p className="text-xs text-muted-foreground truncate max-w-[240px]">
@@ -109,8 +125,10 @@ export function AdminChangePasswordModal({
             </div>
           </div>
           <button
+            type="button"
             onClick={handleClose}
             disabled={loading}
+            aria-label="Cerrar modal"
             className="rounded-xl p-1.5 text-muted-foreground hover:bg-muted hover:text-foreground transition-colors disabled:opacity-50"
           >
             <X className="h-5 w-5" />

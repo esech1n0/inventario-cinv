@@ -17,6 +17,7 @@ import { createModule, deleteModule, updateModule } from "@/app/actions/modules"
 import { CategoryItemsModal, type CategoryItem } from "@/components/CategoryItemsModal";
 import { toast } from "@/components/Toast";
 import { confirmDialog, alertDialog } from "@/components/ConfirmModal";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 interface ModuleWithCount {
   id: string;
@@ -50,6 +51,28 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
   const [editError, setEditError] = useState("");
 
   const isAdmin = userRole === "ADMIN";
+
+  const { modalRef: createModalRef } = useModalFocusTrap({
+    isOpen: isModalOpen,
+    onClose: () => {
+      if (!loading) {
+        setIsModalOpen(false);
+        setError("");
+      }
+    },
+    closeOnEscape: !loading,
+  });
+
+  const { modalRef: editModalRef } = useModalFocusTrap({
+    isOpen: isEditOpen,
+    onClose: () => {
+      if (!editLoading) {
+        setIsEditOpen(false);
+        setEditError("");
+      }
+    },
+    closeOnEscape: !editLoading,
+  });
 
   async function handleCreateModule(e: React.FormEvent) {
     e.preventDefault();
@@ -275,10 +298,48 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
 
       {/* Modal Nueva Categoría */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="animate-fade-in w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
-            <h2 className="text-lg font-bold text-foreground">Crear Nueva Categoría</h2>
-            <p className="mt-1 text-xs text-muted-foreground">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => {
+              if (!loading) {
+                setIsModalOpen(false);
+                setError("");
+              }
+            }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+            aria-hidden="true"
+          />
+
+          <div
+            ref={createModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="create-category-modal-title"
+            tabIndex={-1}
+            className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up focus:outline-none"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-border">
+              <div className="flex items-center gap-2">
+                <Layers className="h-4 w-4 text-primary" />
+                <h2 id="create-category-modal-title" className="text-lg font-bold text-foreground">
+                  Crear Nueva Categoría
+                </h2>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  if (!loading) {
+                    setIsModalOpen(false);
+                    setError("");
+                  }
+                }}
+                aria-label="Cerrar modal"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+            <p className="mt-2 text-xs text-muted-foreground">
               Ingresa el nombre para la nueva categoría de inventario
             </p>
 
@@ -308,8 +369,10 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
                 <button
                   type="button"
                   onClick={() => {
-                    setIsModalOpen(false);
-                    setError("");
+                    if (!loading) {
+                      setIsModalOpen(false);
+                      setError("");
+                    }
                   }}
                   className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
                 >
@@ -331,16 +394,43 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
 
       {/* Modal Editar Categoría */}
       {isEditOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="animate-fade-in w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div
+            onClick={() => {
+              if (!editLoading) {
+                setIsEditOpen(false);
+                setEditError("");
+              }
+            }}
+            className="fixed inset-0 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+            aria-hidden="true"
+          />
+
+          <div
+            ref={editModalRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="edit-category-modal-title"
+            tabIndex={-1}
+            className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up focus:outline-none"
+          >
             <div className="flex items-center justify-between pb-3 border-b border-border">
               <div className="flex items-center gap-2">
                 <Pencil className="h-4 w-4 text-primary" />
-                <h2 className="text-lg font-bold text-foreground">Renombrar Categoría</h2>
+                <h2 id="edit-category-modal-title" className="text-lg font-bold text-foreground">
+                  Renombrar Categoría
+                </h2>
               </div>
               <button
-                onClick={() => setIsEditOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+                type="button"
+                onClick={() => {
+                  if (!editLoading) {
+                    setIsEditOpen(false);
+                    setEditError("");
+                  }
+                }}
+                aria-label="Cerrar modal"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -374,7 +464,12 @@ export function ModulesClient({ initialModules, userRole }: ModulesClientProps) 
               <div className="flex gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setIsEditOpen(false)}
+                  onClick={() => {
+                    if (!editLoading) {
+                      setIsEditOpen(false);
+                      setEditError("");
+                    }
+                  }}
                   className="flex-1 rounded-xl border border-border py-2.5 text-sm font-semibold text-muted-foreground hover:bg-muted"
                 >
                   Cancelar

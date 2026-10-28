@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "@/components/ThemeProvider";
 import { confirmDialog } from "@/components/ConfirmModal";
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
 
 interface NavigationProps {
   user: {
@@ -45,16 +46,10 @@ export function Navigation({ user }: NavigationProps) {
     setIsDrawerOpen(false);
   }, [pathname]);
 
-  // Manejo de la tecla Escape para cerrar el drawer
-  useEffect(() => {
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        setIsDrawerOpen(false);
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
+  const { modalRef: drawerRef } = useModalFocusTrap<HTMLElement>({
+    isOpen: isDrawerOpen,
+    onClose: () => setIsDrawerOpen(false),
+  });
 
   async function handleLogout() {
     const confirmed = await confirmDialog({
@@ -193,14 +188,21 @@ export function Navigation({ user }: NavigationProps) {
       {isDrawerOpen && (
         <div
           onClick={() => setIsDrawerOpen(false)}
-          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm transition-opacity animate-fade-in"
+          className="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm transition-opacity animate-fade-in"
+          aria-hidden="true"
         />
       )}
 
       {/* Panel lateral desplegable */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 sm:w-80 flex-col justify-between border-r border-border bg-card p-5 shadow-2xl transition-transform duration-300 ease-in-out ${
-          isDrawerOpen ? "translate-x-0" : "-translate-x-full"
+        ref={drawerRef}
+        role="dialog"
+        aria-modal={isDrawerOpen ? "true" : undefined}
+        aria-label="Menú principal de navegación"
+        tabIndex={-1}
+        inert={!isDrawerOpen}
+        className={`fixed top-0 bottom-0 left-0 z-50 flex w-72 sm:w-80 flex-col justify-between border-r border-border bg-card p-5 shadow-2xl transition-transform duration-300 ease-in-out focus:outline-none ${
+          isDrawerOpen ? "translate-x-0" : "-translate-x-full pointer-events-none"
         }`}
       >
         {/* Cabecera del Drawer */}
@@ -220,7 +222,9 @@ export function Navigation({ user }: NavigationProps) {
             </div>
 
             <button
+              type="button"
               onClick={() => setIsDrawerOpen(false)}
+              aria-label="Cerrar menú"
               title="Cerrar menú"
               className="flex h-8 w-8 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
             >

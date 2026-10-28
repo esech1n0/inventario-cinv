@@ -117,6 +117,8 @@ interface ConfirmModalProps {
   loading?: boolean;
 }
 
+import { useModalFocusTrap } from "@/components/useModalFocusTrap";
+
 export function ConfirmModal({
   isOpen,
   onClose,
@@ -132,11 +134,9 @@ export function ConfirmModal({
   loading = false,
 }: ConfirmModalProps) {
   const [inputValue, setInputValue] = useState(promptDefaultValue);
-  const modalRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const previousActiveElement = useRef<HTMLElement | null>(null);
 
   // Sincronizar valor inicial del prompt
   useEffect(() => {
@@ -145,76 +145,20 @@ export function ConfirmModal({
     }
   }, [isOpen, promptDefaultValue]);
 
-  // Manejo de foco y accesibilidad
-  useEffect(() => {
-    if (!isOpen) return;
-
-    previousActiveElement.current = document.activeElement as HTMLElement;
-
-    // Bloquear scroll de fondo
-    const originalOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-
-    // Enfoque inicial inteligente
-    const focusTimer = setTimeout(() => {
-      if (type === "prompt" && inputRef.current) {
-        inputRef.current.focus();
-        inputRef.current.select();
-      } else if (variant === "destructive" && cancelButtonRef.current) {
-        // En acciones destructivas enfocar Cancelar por defecto como medida de seguridad
-        cancelButtonRef.current.focus();
-      } else if (confirmButtonRef.current) {
-        confirmButtonRef.current.focus();
-      }
-    }, 50);
-
-    // Escape y Focus Trap
-    function handleKeyDown(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        onClose();
-        return;
-      }
-
-      if (e.key === "Tab" && modalRef.current) {
-        const focusableElements = modalRef.current.querySelectorAll<HTMLElement>(
-          'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-        );
-        const firstElement = focusableElements[0];
-        const lastElement = focusableElements[focusableElements.length - 1];
-
-        if (e.shiftKey) {
-          if (document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement?.focus();
-          }
-        } else {
-          if (document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement?.focus();
-          }
-        }
-      }
-    }
-
-    window.addEventListener("keydown", handleKeyDown);
-
-    return () => {
-      clearTimeout(focusTimer);
-      window.removeEventListener("keydown", handleKeyDown);
-      document.body.style.overflow = originalOverflow;
-      if (previousActiveElement.current) {
-        previousActiveElement.current.focus();
-      }
-    };
-  }, [isOpen, type, variant, onClose]);
-
-  if (!isOpen) return null;
-
   const isDestructive = variant === "destructive";
   const isWarning = variant === "warning";
   const isInfo = variant === "info";
   const isAlert = type === "alert";
+
+  const { modalRef } = useModalFocusTrap({
+    isOpen,
+    onClose,
+    isDestructive,
+    initialFocusRef: type === "prompt" ? inputRef : isDestructive ? cancelButtonRef : confirmButtonRef,
+    closeOnEscape: !loading,
+  });
+
+  if (!isOpen) return null;
 
   const defaultConfirmText = isAlert
     ? "Entendido"
@@ -275,7 +219,8 @@ export function ConfirmModal({
       {/* Contenedor del Modal */}
       <div
         ref={modalRef}
-        className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up"
+        tabIndex={-1}
+        className="relative z-50 w-full max-w-md rounded-2xl border border-border bg-card p-6 shadow-2xl animate-scale-up focus:outline-none"
       >
         {/* Botón cerrar esquina superior */}
         <button

@@ -7,7 +7,7 @@ import path from "node:path";
 const dir = path.join(process.cwd(), "prisma", "migrations");
 
 // Cargar .env si se ejecuta localmente donde el entorno aún no tiene las variables inyectadas
-if (!process.env.DATABASE_URL && !process.env.DATABASE_URL_DEVELOP) {
+if (!process.env.DATABASE_URL && !process.env.DATABASE_URL_DEVELOP && !process.env.DATABASE_URL_PRODUCTION) {
   const envPath = path.join(process.cwd(), ".env");
   if (existsSync(envPath)) {
     const content = readFileSync(envPath, "utf8");
@@ -29,8 +29,20 @@ if (!process.env.DATABASE_URL && !process.env.DATABASE_URL_DEVELOP) {
   }
 }
 
-if (!process.env.DATABASE_URL && process.env.DATABASE_URL_DEVELOP) {
-  process.env.DATABASE_URL = process.env.DATABASE_URL_DEVELOP;
+if (!process.env.DATABASE_URL) {
+  const fallback =
+    (process.env.NODE_ENV === "production"
+      ? process.env.DATABASE_URL_PRODUCTION || process.env.DATABASE_URL_PROD
+      : undefined) ||
+    process.env.DATABASE_URL_PRODUCTION ||
+    process.env.DATABASE_URL_PROD ||
+    process.env.DATABASE_URL_DEVELOP ||
+    process.env.POSTGRES_PRISMA_URL ||
+    process.env.POSTGRES_URL;
+
+  if (fallback) {
+    process.env.DATABASE_URL = fallback;
+  }
 }
 
 if (!process.env.DATABASE_URL) {

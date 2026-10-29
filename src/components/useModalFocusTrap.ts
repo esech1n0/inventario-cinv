@@ -54,6 +54,22 @@ export function useModalFocusTrap<T extends HTMLElement = HTMLDivElement>({
 }: UseModalFocusTrapOptions) {
   const modalRef = useRef<T | null>(null);
   const previousActiveElement = useRef<HTMLElement | null>(null);
+  const optionsRef = useRef({
+    onClose,
+    initialFocusRef,
+    isDestructive,
+    closeOnEscape,
+  });
+
+  // Mantener las opciones sincronizadas sin disparar re-ejecución del efecto principal
+  useEffect(() => {
+    optionsRef.current = {
+      onClose,
+      initialFocusRef,
+      isDestructive,
+      closeOnEscape,
+    };
+  });
 
   useEffect(() => {
     if (!isOpen || typeof window === "undefined") return;
@@ -66,8 +82,6 @@ export function useModalFocusTrap<T extends HTMLElement = HTMLDivElement>({
     document.body.style.overflow = "hidden";
 
     // 3. Aplicar 'inert' a todos los hermanos de los ancestros del modal (pantalla de fondo)
-    // Se recorre desde el modal hasta body, marcando los nodos hermanos sin afectar al modal
-    // ni a ninguno de sus ancestros directos.
     const inertElements: HTMLElement[] = [];
     const modalEl: HTMLElement | null = modalRef.current;
 
@@ -77,7 +91,6 @@ export function useModalFocusTrap<T extends HTMLElement = HTMLDivElement>({
         const parentEl: HTMLElement = current.parentElement;
         Array.from(parentEl.children).forEach((child) => {
           if (child !== current && child instanceof HTMLElement) {
-            // No marcar nodos del modal portal o toasts si existieran
             if (!child.hasAttribute("inert")) {
               child.setAttribute("inert", "");
               inertElements.push(child);
@@ -88,24 +101,20 @@ export function useModalFocusTrap<T extends HTMLElement = HTMLDivElement>({
       }
     }
 
-    // 4. Mover el foco inicial al elemento apropiado
+    // 4. Mover el foco inicial al elemento apropiado solo una vez al abrir
     const focusTimer = setTimeout(() => {
       if (!modalRef.current) return;
 
+      const opts = optionsRef.current;
+
       // Opción A: Ref explícito proporcionado
-      if (initialFocusRef?.current) {
-        initialFocusRef.current.focus();
-        if (
-          initialFocusRef.current instanceof HTMLInputElement &&
-          initialFocusRef.current.type === "text"
-        ) {
-          initialFocusRef.current.select();
-        }
+      if (opts.initialFocusRef?.current) {
+        opts.initialFocusRef.current.focus();
         return;
       }
 
       // Opción B: Acción destructiva -> enfocar Cancelar o Cerrar
-      if (isDestructive) {
+      if (opts.isDestructive) {
         const safeButton = modalRef.current.querySelector<HTMLElement>(
           'button[data-cancel="true"], button:not([type="submit"]):not([disabled])'
         );
@@ -115,13 +124,10 @@ export function useModalFocusTrap<T extends HTMLElement = HTMLDivElement>({
         }
       }
 
-      // Opción C: Formulario -> enfocar el primer campo editable
+      // Opción C: Formulario -> enfocar el primer campo editable (sin auto-seleccionar texto)
       const firstInput = modalRef.current.querySelector<HTMLElement>(EDITABLE_INPUT_SELECTOR);
       if (firstInput) {
         firstInput.focus();
-        if (firstInput instanceof HTMLInputElement && firstInput.type === "text") {
-          firstInput.select();
-        }
         return;
       }
 
@@ -138,9 +144,9 @@ export function useModalFocusTrap<T extends HTMLElement = HTMLDivElement>({
     function handleKeyDown(e: KeyboardEvent) {
       if (!modalRef.current) return;
 
-      if (closeOnEscape && e.key === "Escape") {
+      if (optionsRef.current.closeOnEscape && e.key === "Escape") {
         e.preventDefault();
-        onClose();
+        optionsRef.current.onClose();
         return;
       }
 
@@ -211,7 +217,7 @@ export function useModalFocusTrap<T extends HTMLElement = HTMLDivElement>({
         previousActiveElement.current.focus();
       }
     };
-  }, [isOpen, onClose, isDestructive, closeOnEscape, initialFocusRef]);
+  }, [isOpen]);
 
   return { modalRef };
 }

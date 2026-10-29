@@ -17,7 +17,7 @@ export default async function HistoryPage() {
   }
 
   if (session.user.role !== "ADMIN") {
-    redirect("/dashboard");
+    redirect("/403");
   }
 
   let serializedTransactions: any[] = [];

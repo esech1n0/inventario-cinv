@@ -13,7 +13,12 @@ export default auth((req) => {
     return NextResponse.redirect(new URL("/login", req.url));
   }
 
-  const publicRoutes = ["/login"];
+  const authRoutes = ["/login"];
+  const isAuthRoute = authRoutes.some((route) =>
+    pathname.startsWith(route)
+  );
+
+  const publicRoutes = ["/login", "/403"];
   const isPublicRoute = publicRoutes.some((route) =>
     pathname.startsWith(route)
   );
@@ -35,7 +40,7 @@ export default auth((req) => {
   }
 
   // Redirect authenticated users away from auth pages
-  if (isLoggedIn && isPublicRoute) {
+  if (isLoggedIn && isAuthRoute) {
     return NextResponse.redirect(new URL("/dashboard", req.url));
   }
 
@@ -43,7 +48,7 @@ export default auth((req) => {
   const adminRoutes = ["/dashboard/users", "/dashboard/ruleta", "/dashboard/history"];
   const isAdminRoute = adminRoutes.some((route) => pathname.startsWith(route));
   if (isAdminRoute && req.auth?.user?.role !== "ADMIN") {
-    return NextResponse.redirect(new URL("/dashboard", req.url));
+    return NextResponse.redirect(new URL("/403", req.url));
   }
 
   return NextResponse.next();

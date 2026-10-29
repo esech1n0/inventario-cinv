@@ -12,7 +12,6 @@ import React, {
 import {
   AlertTriangle,
   Trash2,
-  AlertCircle,
   Info,
   HelpCircle,
   X,
@@ -35,7 +34,7 @@ export interface ConfirmDialogOptions {
 
 interface ActiveDialogState extends ConfirmDialogOptions {
   id: string;
-  resolve: (value: any) => void;
+  resolve: (value: unknown) => void;
   promptValue: string;
 }
 
@@ -133,17 +132,10 @@ export function ConfirmModal({
   promptDefaultValue = "",
   loading = false,
 }: ConfirmModalProps) {
-  const [inputValue, setInputValue] = useState(promptDefaultValue);
+  const [inputValue, setInputValue] = useState(promptDefaultValue || "");
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
   const confirmButtonRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-
-  // Sincronizar valor inicial del prompt
-  useEffect(() => {
-    if (isOpen) {
-      setInputValue(promptDefaultValue);
-    }
-  }, [isOpen, promptDefaultValue]);
 
   const isDestructive = variant === "destructive";
   const isWarning = variant === "warning";
@@ -433,6 +425,7 @@ export function ConfirmDialogProvider({ children }: { children: ReactNode }) {
       {children}
       {activeDialog && (
         <ConfirmModal
+          key={activeDialog.id}
           isOpen={true}
           onClose={handleClose}
           onConfirm={handleConfirm}

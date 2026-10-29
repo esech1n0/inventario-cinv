@@ -11,7 +11,7 @@ export default async function UsersPage() {
   }
 
   if (session.user.role !== "ADMIN") {
-    redirect("/dashboard");
+    redirect("/403");
   }
 
   let serializedUsers: any[] = [];

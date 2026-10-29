@@ -12,7 +12,7 @@ export const metadata = {
 export default async function RuletaPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  if (session.user.role !== "ADMIN") redirect("/dashboard");
+  if (session.user.role !== "ADMIN") redirect("/403");
 
   let users: RouletteUser[] = [];
   let history: RouletteDrawEntry[] = [];

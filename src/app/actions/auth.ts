@@ -3,7 +3,7 @@
 import bcryptjs from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { signIn, auth } from "@/lib/auth";
-import { registerSchema, loginSchema, changeMyPasswordSchema } from "@/lib/validations";
+import { loginSchema, changeMyPasswordSchema } from "@/lib/validations";
 import { AuthError } from "next-auth";
 
 export type ActionResult<T = unknown> = {

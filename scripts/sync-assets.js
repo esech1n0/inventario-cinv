@@ -119,3 +119,13 @@ if (fs.existsSync(errorSrc)) {
 } else {
   console.warn("⚠️ [sync-assets] No se encontró assets/images/error.png");
 }
+
+// 4. Error 403 image -> alto.png
+const altoSrc = path.join(rootDir, "assets", "images", "alto.png");
+if (fs.existsSync(altoSrc)) {
+  fs.copyFileSync(altoSrc, path.join(publicImagesDir, "alto.png"));
+  fs.copyFileSync(altoSrc, path.join(publicDir, "alto.png"));
+  console.log("✅ [sync-assets] Sincronizado alto.png -> public/images/alto.png (Error 403)");
+} else {
+  console.warn("⚠️ [sync-assets] No se encontró assets/images/alto.png");
+}
